@@ -3,13 +3,10 @@ import dask.array as da
 import dask.dataframe as dd
 from picowizpl import *
 
-open_picowizpl('miniwizpl_test')
+with PicoWizPLCompiler('miniwizpl_test'):
+    y = da.random.randint(1, 10, 100000)
+    ddf = dd.from_dask_array(y, columns=['A'])
+    sdf = ddf.applymap(SecretInt)
+    ss = sdf['A']
+    print(ss.sum().compute())
 
-y = da.random.randint(1, 10, 100000)
-ddf = dd.from_dask_array(y, columns=['A'])
-sdf = ddf.applymap(SecretInt)
-ss = sdf['A']
-print(ss.sum().compute())
-
-
-close_picowizpl()
