@@ -76,8 +76,8 @@ class PicoWizPLCompiler(object):
     def __enter__(self):
         global cc
         cc = self
-        self.relation_file = open(self.file_prefix + '.type0.wit', 'w')
-        self.witness_file = open(self.file_prefix + '.rel', 'w')
+        self.witness_file = open(self.file_prefix + '.type0.wit', 'w')
+        self.relation_file = open(self.file_prefix + '.rel', 'w')
 
     def __exit__(self, exception_type, exception_value, traceback):
         global cc
