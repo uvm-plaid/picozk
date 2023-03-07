@@ -10,7 +10,7 @@ with PicoWizPLCompiler('miniwizpl_test'):
 
     rvec = np.random.randint(0, p, (len(input_vec), len(input_vec)))
 
-    state = input_vec
+    state = np.array(input_vec)
     for _ in range(n):
         state = np.dot(rvec, state)
 
