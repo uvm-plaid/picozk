@@ -3,6 +3,7 @@ import numpy as np
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
+import galois
 
 # Current compiler
 cc = None
@@ -27,6 +28,9 @@ class Wire:
     wire: str
     val: any
 
+    def as_gf(self, gf):
+        return Wire(self.wire, gf(self.val))
+
     def __add__(self, other):
         r = cc.next_wire()
         cc.emit(f'  {r} <- @add({self.wire}, {cc.wire_of(other)});')
@@ -46,6 +50,20 @@ class Wire:
         cc.emit(f'  {r} <- @mul({self.wire}, {cc.wire_of(other)});')
         return Wire(r, self.val * val_of(other))
     __rmul__ = __mul__
+
+    def __pow__(self, other):
+        def exp_by_squaring(x, n):
+            assert n > 0
+            if n%2 == 0:
+                if n // 2 == 1:
+                    return x * x
+                else:
+                    return exp_by_squaring(x * x,  n // 2)
+            else:
+                return x * exp_by_squaring(x * x, (n - 1) // 2)
+
+        assert isinstance(other, int)
+        return exp_by_squaring(self, other)
 
 
 class PicoWizPLCompiler(object):
@@ -71,6 +89,12 @@ class PicoWizPLCompiler(object):
             r = self.next_wire()
             self.emit(f'  {r} <- <{e}>;')
             return r
+        elif isinstance(e, galois.Array):
+            r = self.next_wire()
+            self.emit(f'  {r} <- <{int(e)}>;')
+            return r
+        else:
+            raise Exception('no wire for value', e, 'of type', type(e))
 
     def next_wire(self):
         r = self.current_wire
@@ -85,18 +109,18 @@ class PicoWizPLCompiler(object):
 
         self.emit('version 2.0.0-beta;')
         self.emit('circuit;')
-        self.emit('@type field 2305843009213693951;')
+        self.emit(f'@type field {self.field};')
         self.emit('@begin')
 
         self.witness_file.write('version 2.0.0-beta;\n')
         self.witness_file.write('private_input;\n')
-        self.witness_file.write('@type field 2305843009213693951;\n')
+        self.witness_file.write(f'@type field {self.field};\n')
         self.witness_file.write('@begin\n')
 
         ins_file = open(self.file_prefix + '.type0.ins', 'w')
         ins_file.write('version 2.0.0-beta;\n')
         ins_file.write('public_input;\n')
-        ins_file.write('@type field 2305843009213693951;\n')
+        ins_file.write(f'@type field {self.field};\n')
         ins_file.write('@begin\n')
         ins_file.write('@end\n')
         ins_file.close()
