@@ -5,3 +5,4 @@ with PicoWizPLCompiler('miniwizpl_test'):
     sdf = df.applymap(SecretInt)
     output = sdf['A'].sum()
     print(output)
+    assert0(output - val_of(output))
