@@ -1,5 +1,6 @@
-import sys
-import numpy as np
+from numba import jit, config
+config.DISABLE_JIT = True
+
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
