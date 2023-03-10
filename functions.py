@@ -30,7 +30,8 @@ def picowizpl_function(*args, **kwargs):
                     wire_names = [f'${w}' for w in range(ow + i*iw, ow + (i+1)*iw)]
                     wire_bundle = concfn(a)
                     new_wires = [Wire(name, w.val) for name, w in zip(wire_names, wire_bundle.wires)]
-                    new_args.append(absfn(WireBundle(new_wires)))
+                    new_args.append(WireBundle(new_wires))
+                    #new_args.append(absfn(WireBundle(new_wires)))
 
                 # set up the compiler
                 old_current_wire = cc.current_wire
@@ -46,13 +47,14 @@ def picowizpl_function(*args, **kwargs):
 
                 # reset the compiler
                 cc.current_wire = old_current_wire
-                return output
-            else:
-                wires = [cc.next_wire() for _ in range(ow)]
-                output = abs_op(wires, *args)
-                new_args = ', '.join([f'{i.wires[0].wire} .. {i.wires[-1].wire}' for i in args])
-                cc.emit(f'  {wires[0]} .. {wires[-1]} <- @call({name}, {new_args});')
-                return output
+
+
+            # construct the function call
+            wires = [cc.next_wire() for _ in range(ow)]
+            output = abs_op(wires, *args)
+            new_args = ', '.join([f'{i.wires[0].wire} ... {i.wires[-1].wire}' for i in args])
+            cc.emit(f'  {wires[0]} ... {wires[-1]} <- @call({name}, {new_args});')
+            return output
 
         return wrapped
 

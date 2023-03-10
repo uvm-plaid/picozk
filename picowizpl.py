@@ -24,6 +24,10 @@ def val_of(x):
     else:
         return x
 
+def allocate(n):
+    i = cc.current_wire
+    cc.emit(f'  @new(${i} ... ${i + n-1});')
+
 def assert0(x):
     cc.emit(f'  @assert_zero({x.wire});')
 

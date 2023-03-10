@@ -50,6 +50,8 @@ def encode_int(i):
     return gf_2([int(b) for b in reversed(bit_format.format(i))])
 
 def binary_int(i):
+    bits = encode_int(i)
+    allocate(len(bits))
     wires = [SecretInt(b) for b in encode_int(i)]
     return BinaryInt(wires)
 
