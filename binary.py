@@ -13,6 +13,9 @@ BITWIDTH = 32
 def abs_add(wires, a, b):
     return BinaryInt(wires, a.val + b.val)
 
+def add_twice(a, b):
+    return a + b + a
+
 @dataclass
 class BinaryInt:
     wires: List[str]
@@ -71,5 +74,6 @@ with PicoWizPLCompiler('miniwizpl_test', field=2):
     for i in range(2000):
         tot = tot + v
 
+    tot = add_twice(tot, tot)
     print(tot.to_int())
     check_equal(tot, tot.to_int())
