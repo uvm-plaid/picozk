@@ -22,6 +22,8 @@ def val_of(x):
             raise Exception(f'Attempt to find value of None in object {x}')
         else:
             return x.val
+    elif isinstance(x, bool):
+        return int(x)
     else:
         return x
 
@@ -33,8 +35,10 @@ def assert0(x):
     cc.emit(f'  @assert_zero({cc.wire_of(x)});')
 
 def mux(a, b, c):
-    na = - a
-    return a * b + na * c
+    if isinstance(a, int):
+        return b if a else c
+    else:
+        return a * b + (~a) * c
 
 @dataclass
 class Wire:
@@ -44,10 +48,21 @@ class Wire:
     def as_gf(self, gf):
         return Wire(self.wire, gf(self.val))
 
+    def __and__(self, other):
+        return self * other
+    __rand__ = __and__
+
+    def __or__(self, other):
+        return (self * other) + (self * (~other)) + ((~self) * other)
+    __ror__ = __or__
+
     def __neg__(self):
         r = cc.next_wire()
         cc.emit(f'  {r} <- @mulc({self.wire}, < {cc.field - 1} >);')
-        return Wire(r, - self.val)
+        return Wire(r, -self.val)
+
+    def __invert__(self):
+        return (-self) + 1
 
     def __add__(self, other):
         if isinstance(other, Wire):
@@ -69,24 +84,26 @@ class Wire:
     __rsub__ = __sub__
 
     def __mul__(self, other):
+        #print('mul', self, other)
         if isinstance(other, Wire):
             r = cc.next_wire()
             cc.emit(f'  {r} <- @mul({self.wire}, {cc.wire_of(other)});')
-            return Wire(r, self.val + val_of(other))
+            return Wire(r, self.val * val_of(other))
         elif isinstance(other, int):
             if other == 0:
                 return 0
             else:
                 r = cc.next_wire()
                 cc.emit(f'  {r} <- @mulc({self.wire}, <{other%cc.field}>);')
-                return Wire(r, self.val + other)
+                return Wire(r, self.val * int(other))
     __rmul__ = __mul__
 
     def __eq__(self, other):
         diff = self - other
         r = cc.next_wire()
         cc.emit(f'  {r} <- @call(mux, {cc.wire_of(diff)}, {cc.wire_of(1)}, {cc.wire_of(0)});')
-        return Wire(r, val_of(self) == val_of(other))
+        return Wire(r, int(val_of(self) == val_of(other)))
+    __req__ = __eq__
 
 
     def __pow__(self, other):
