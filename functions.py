@@ -39,7 +39,7 @@ def picowizpl_function(*args, **kwargs):
                 # compile the function
                 output = func(*new_args)
                 output_wire_names = [f'${w}' for w in range(0, ow)]
-                for output_wire_name, wire in zip(output_wire_names, concfn(output).wires):
+                for output_wire_name, wire in zip(output_wire_names, output.wires):
                     cc.emit(f'  {output_wire_name} <- {wire.wire};')
 
                 # done compiling
@@ -52,7 +52,7 @@ def picowizpl_function(*args, **kwargs):
             # construct the function call
             wires = [cc.next_wire() for _ in range(ow)]
             output = abs_op(wires, *args)
-            new_args = ', '.join([f'{i.wires[0].wire} ... {i.wires[-1].wire}' for i in args])
+            new_args = ', '.join([f'{i.wires[0]} ... {i.wires[-1]}' for i in args])
             cc.emit(f'  {wires[0]} ... {wires[-1]} <- @call({name}, {new_args});')
             return output
 
