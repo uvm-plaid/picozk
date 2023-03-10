@@ -33,9 +33,12 @@ class Wire:
         return Wire(self.wire, gf(self.val))
 
     def __add__(self, other):
-        r = cc.next_wire()
-        cc.emit(f'  {r} <- @add({self.wire}, {cc.wire_of(other)});')
-        return Wire(r, self.val + val_of(other))
+        if other == 0:
+            return self
+        else:
+            r = cc.next_wire()
+            cc.emit(f'  {r} <- @add({self.wire}, {cc.wire_of(other)});')
+            return Wire(r, self.val + val_of(other))
     __radd__ = __add__
 
     def __sub__(self, other):
@@ -47,9 +50,12 @@ class Wire:
     __rsub__ = __sub__
 
     def __mul__(self, other):
-        r = cc.next_wire()
-        cc.emit(f'  {r} <- @mul({self.wire}, {cc.wire_of(other)});')
-        return Wire(r, self.val * val_of(other))
+        if other == 0:
+            return 0
+        else:
+            r = cc.next_wire()
+            cc.emit(f'  {r} <- @mul({self.wire}, {cc.wire_of(other)});')
+            return Wire(r, self.val * val_of(other))
     __rmul__ = __mul__
 
     def __pow__(self, other):
