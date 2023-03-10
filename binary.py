@@ -1,6 +1,11 @@
+from numba import jit, config
+config.DISABLE_JIT = True
+
 from picowizpl import *
 from typing import List
 import galois
+from functions import picowizpl_function
+from typing import List
 
 gf_2 = galois.GF(2)
 BITWIDTH = 32
@@ -13,11 +18,20 @@ def abs_add(wires, a, b):
 class BinaryInt:
     wires: List[Wire]
 
+    @classmethod
+    def abs(cls, bundle):
+        return BinaryInt(bundle.wires)
+
+    def conc(self):
+        return WireBundle(self.wires)
+
     def to_int(self):
         val_list = [int(val_of(x)) for x in self.wires]
         return int("".join(str(x) for x in reversed(val_list)), 2)
 
-    @picowizpl_function(in_wires=BITWIDTH, out_wires=BITWIDTH, abstraction=abs_add)
+    @picowizpl_function(in_wires=BITWIDTH, out_wires=BITWIDTH,
+                        concfn=lambda x: x.conc(), absfn=lambda x: BinaryInt.abs(x),
+                        op=abs_add)
     def __add__(self, other):
         out_wires = []
         carry = 0
@@ -44,10 +58,9 @@ def check_equal(c, i):
         assert0(w + b)
 
 with PicoWizPLCompiler('miniwizpl_test', field=2):
-    print('enter')
     v = binary_int(10)
     tot = v
-    for i in range(20):
+    for i in range(2000):
         tot = tot + v
     #print(tot)
     print(tot.to_int())

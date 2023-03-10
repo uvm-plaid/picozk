@@ -5,68 +5,12 @@ from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 import galois
-from functools import wraps
+from typing import List
 
 # Current compiler
 cc = None
 
-gensym_num = 0
-def gensym(x):
-    global gensym_num
-    gensym_num = gensym_num + 1
-    return f'{x}_{gensym_num}'
 
-
-def picowizpl_function(*args, **kwargs):
-    if len(args) == 1 and len(kwargs) == 0 and callable(args[0]):
-        raise RuntimeError('Args required')
-
-    print('wrapper!', args, kwargs)
-    def decorator(func):
-        needs_compilation = True
-        name = gensym('func')
-        iw = kwargs['in_wires']
-        ow = kwargs['out_wires']
-        abs_fn = kwargs['abstraction']
-
-        @wraps(func)
-        def wrapped(*args):
-            global cc
-            nonlocal needs_compilation
-            if needs_compilation:
-                print('compiling', name)
-                needs_compilation = False
-                cc.emit(f'  @function({name}, @out: 0:{ow}, @in: 0:{iw}, 0:{iw})')
-                # compile the function
-                # TODO: generalize to n args
-                # TODO: need generic wire bundles
-                in_wires_1 = [f'${w}' for w in range(ow, ow+iw)]
-                in_wires_2 = [f'${w}' for w in range(ow+iw, ow+2*iw)]
-                in1 = BinaryInt([Wire(w, ow.val) for w, v in zip(in_wires_1, args[0])])
-                in2 = BinaryInt([Wire(w, ow.val) for w, v in zip(in_wires_2, args[1])])
-                print(in1)
-                print(in2)
-                1/0
-                old_current_wire = cc.current_wire
-                cc.current_wire = ow + 2*iw
-                output = func(*args)
-                cc.current_wire = old_current_wire
-                # done compiling
-                cc.emit(f'  @end')
-                return output
-            else:
-                wires = [cc.next_wire() for _ in range(ow)]
-                output = abs_fn(wires, *args)
-                print(len(args))
-                new_args = ', '.join([f'{i.wires[0].wire} .. {i.wires[-1].wire}' for i in args])
-                cc.emit(f'  {wires[0]} .. {wires[-1]} <- @call({name}, {new_args});')
-                return output
-
-            # result = Prim('rec', [name, bound, list(args), func], None)
-            # return result
-        return wrapped
-
-    return decorator
 
 def SecretInt(x):
     return cc.add_to_witness(x)
@@ -131,6 +75,9 @@ class Wire:
         assert isinstance(other, int)
         return exp_by_squaring(self, other)
 
+@dataclass
+class WireBundle:
+    wires: List[Wire]
 
 class PicoWizPLCompiler(object):
     def __init__(self, file_prefix, field=2**61-1):
