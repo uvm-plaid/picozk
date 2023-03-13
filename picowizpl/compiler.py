@@ -64,19 +64,20 @@ class Wire:
         return (-self) + 1
 
     def __add__(self, other):
-        if isinstance(other, Wire):
-            r = cc.next_wire()
-            cc.emit(f'  {r} <- @add({self.wire}, {cc.wire_of(other)});')
-            return Wire(r, self.val + val_of(other))
-        elif isinstance(other, (int, galois.Array)):
-            if other == 0:
-                return self
-            else:
-                r = cc.next_wire()
-                cc.emit(f'  {r} <- @addc({self.wire}, <{other}>);')
-                return Wire(r, self.val + other)
+        if not isinstance(other, Wire) and other == 0:
+            return self
         else:
-            raise Exception(f'unknown type for addition: {type(other)}')
+            r = cc.next_wire()
+            if isinstance(other, Wire):
+                cc.emit(f'  {r} <- @add({self.wire}, {cc.wire_of(other)});')
+            elif isinstance(other, int):
+                cc.emit(f'  {r} <- @addc({self.wire}, <{other%cc.field}>);')
+            elif isinstance(other, galois.Array):
+                cc.emit(f'  {r} <- @addc({self.wire}, <{int(other)}>);')
+            else:
+                raise Exception(f'unknown type for addition: {type(other)}')
+
+            return Wire(r, self.val + val_of(other))
 
     __radd__ = __add__
 
@@ -86,18 +87,21 @@ class Wire:
     __rsub__ = __sub__
 
     def __mul__(self, other):
-        #print('mul', self, other)
-        if isinstance(other, Wire):
+        if not isinstance(other, Wire) and other == 0:
+            return other
+        else:
             r = cc.next_wire()
-            cc.emit(f'  {r} <- @mul({self.wire}, {cc.wire_of(other)});')
-            return Wire(r, self.val * val_of(other))
-        elif isinstance(other, (int, galois.Array)):
-            if other == 0:
-                return 0
-            else:
-                r = cc.next_wire()
+            if isinstance(other, Wire):
+                cc.emit(f'  {r} <- @mul({self.wire}, {cc.wire_of(other)});')
+            elif isinstance(other, int):
                 cc.emit(f'  {r} <- @mulc({self.wire}, <{other%cc.field}>);')
-                return Wire(r, self.val * int(other))
+            elif isinstance(other, galois.Array):
+                cc.emit(f'  {r} <- @mulc({self.wire}, <{int(other)}>);')
+            else:
+                raise Exception(f'unknown type for multiplication: {type(other)}')
+
+            return Wire(r, self.val * val_of(other))
+
     __rmul__ = __mul__
 
     def __eq__(self, other):
