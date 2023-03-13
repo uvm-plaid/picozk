@@ -11,6 +11,8 @@ from typing import List
 # Current compiler
 cc = None
 
+def emit(s=''):
+    cc.emit(s)
 
 def SecretInt(x):
     return cc.add_to_witness(x)
@@ -152,10 +154,11 @@ galois.Array.__radd__ = mk_defer(Wire.__radd__, galois.Array.__radd__)
 galois.Array.__rmul__ = mk_defer(Wire.__rmul__, galois.Array.__rmul__)
 
 class PicoWizPLCompiler(object):
-    def __init__(self, file_prefix, field=2**61-1):
+    def __init__(self, file_prefix, field=2**61-1, options=[]):
         self.file_prefix = file_prefix
         self.current_wire = 0
         self.field = field
+        self.options = options
 
     def emit(self, s=''):
         self.relation_file.write(s)
@@ -196,12 +199,30 @@ class PicoWizPLCompiler(object):
         self.emit('version 2.0.0-beta;')
         self.emit('circuit;')
         self.emit('@plugin mux_v0;')
+
+        if 'ram' in self.options:
+            emit(f'@plugin ram_arith_v0;')
+
         self.emit(f'@type field {self.field};')
+
+        if 'ram' in self.options:
+            s = '@type @plugin(ram_arith_v0, ram, 0, {0}, {1}, {2});'
+            emit(s.format(20, # number of rams
+                          2000, # total allocation size
+                          2000)) # not sure
+
         self.emit('@begin')
 
         self.emit('  @function(mux, @out: 0:1, @in: 0:1, 0:1, 0:1)')
         self.emit('    @plugin(mux_v0, permissive);')
 
+        if 'ram' in self.options:
+            ram_type = 1
+            emit(f'  @function(read_ram, @out: 0:1, @in: {ram_type}:1, 0:1)')
+            emit('    @plugin(ram_arith_v0, read);')
+            emit(f'  @function(write_ram, @in: {ram_type}:1, 0:1, 0:1)')
+            emit('    @plugin(ram_arith_v0, write);')
+            emit()
 
         self.witness_file.write('version 2.0.0-beta;\n')
         self.witness_file.write('private_input;\n')
