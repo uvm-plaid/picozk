@@ -11,9 +11,6 @@ from typing import List
 # Current compiler
 cc = None
 
-def emit(s=''):
-    cc.emit(s)
-
 def SecretInt(x):
     return cc.add_to_witness(x)
 
@@ -201,15 +198,15 @@ class PicoWizPLCompiler(object):
         self.emit('@plugin mux_v0;')
 
         if 'ram' in self.options:
-            emit(f'@plugin ram_arith_v0;')
+            self.emit(f'@plugin ram_arith_v0;')
 
         self.emit(f'@type field {self.field};')
 
         if 'ram' in self.options:
             s = '@type @plugin(ram_arith_v0, ram, 0, {0}, {1}, {2});'
-            emit(s.format(20, # number of rams
-                          2000, # total allocation size
-                          2000)) # not sure
+            self.emit(s.format(20, # number of rams
+                               2000, # total allocation size
+                               2000)) # not sure
 
         self.emit('@begin')
 
@@ -218,11 +215,11 @@ class PicoWizPLCompiler(object):
 
         if 'ram' in self.options:
             ram_type = 1
-            emit(f'  @function(read_ram, @out: 0:1, @in: {ram_type}:1, 0:1)')
-            emit('    @plugin(ram_arith_v0, read);')
-            emit(f'  @function(write_ram, @in: {ram_type}:1, 0:1, 0:1)')
-            emit('    @plugin(ram_arith_v0, write);')
-            emit()
+            self.emit(f'  @function(read_ram, @out: 0:1, @in: {ram_type}:1, 0:1)')
+            self.emit('    @plugin(ram_arith_v0, read);')
+            self.emit(f'  @function(write_ram, @in: {ram_type}:1, 0:1, 0:1)')
+            self.emit('    @plugin(ram_arith_v0, write);')
+            self.emit()
 
         self.witness_file.write('version 2.0.0-beta;\n')
         self.witness_file.write('private_input;\n')
