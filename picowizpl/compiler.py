@@ -12,7 +12,6 @@ from typing import List
 cc = None
 
 
-
 def SecretInt(x):
     return cc.add_to_witness(x)
 
@@ -69,13 +68,16 @@ class Wire:
             r = cc.next_wire()
             cc.emit(f'  {r} <- @add({self.wire}, {cc.wire_of(other)});')
             return Wire(r, self.val + val_of(other))
-        elif isinstance(other, int):
+        elif isinstance(other, (int, galois.Array)):
             if other == 0:
                 return self
             else:
                 r = cc.next_wire()
-                cc.emit(f'  {r} <- @addc({self.wire}, <{other%cc.field}>);')
+                cc.emit(f'  {r} <- @addc({self.wire}, <{other}>);')
                 return Wire(r, self.val + other)
+        else:
+            raise Exception(f'unknown type for addition: {type(other)}')
+
     __radd__ = __add__
 
     def __sub__(self, other):
@@ -89,7 +91,7 @@ class Wire:
             r = cc.next_wire()
             cc.emit(f'  {r} <- @mul({self.wire}, {cc.wire_of(other)});')
             return Wire(r, self.val * val_of(other))
-        elif isinstance(other, int):
+        elif isinstance(other, (int, galois.Array)):
             if other == 0:
                 return 0
             else:
@@ -123,6 +125,22 @@ class Wire:
 @dataclass
 class WireBundle:
     wires: List[Wire]
+
+
+def mk_defer(new_fn, old_fn):
+    def defer_fn(x, y):
+        if isinstance(x, Wire):
+            return new_fn(x, y)
+        elif isinstance(y, Wire):
+            return new_fn(y, x)
+        else:
+            return old_fn(x, y)
+    return defer_fn
+
+galois.Array.__add__ = mk_defer(Wire.__add__, galois.Array.__add__)
+galois.Array.__mul__ = mk_defer(Wire.__mul__, galois.Array.__mul__)
+galois.Array.__radd__ = mk_defer(Wire.__radd__, galois.Array.__radd__)
+galois.Array.__rmul__ = mk_defer(Wire.__rmul__, galois.Array.__rmul__)
 
 class PicoWizPLCompiler(object):
     def __init__(self, file_prefix, field=2**61-1):

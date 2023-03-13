@@ -1,7 +1,7 @@
 import numpy as np
 from picowizpl import *
-import poseidon_round_numbers as rn
-import poseidon_round_constants as rc
+import picowizpl.poseidon_hash.poseidon_round_numbers as rn
+import picowizpl.poseidon_hash.poseidon_round_constants as rc
 import galois
 from math import log2, ceil
 
@@ -32,6 +32,8 @@ class PoseidonHash:
                                                 self.p, self.field_p, self.alpha, self.prime_bit_len)
         self.mds_matrix = np.array(rc.mds_matrix_generator(self.field_p, self.t))
 
+        self.state = [self.field_p(0) for _ in range(t)]
+
     def s_box(self, element):
         return pow(element, self.alpha)
 
@@ -56,7 +58,8 @@ class PoseidonHash:
 
     def hash(self, input_vec):
         self.rc_counter = 0
-        self.state = input_vec + [self.field_p(0) for _ in range(self.t-len(input_vec))]
+        padded_input = input_vec + [self.field_p(0) for _ in range(self.t-len(input_vec))]
+        self.state = [padded_input[i] + self.state[i] for i in range(self.t)]
 
         self.full_rounds()
         self.partial_rounds()

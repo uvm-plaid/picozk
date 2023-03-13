@@ -1,5 +1,5 @@
 from picowizpl import *
-from poseidon_hash import *
+from picowizpl.poseidon_hash import PoseidonHash
 import galois
 
 p = 2**61-1
