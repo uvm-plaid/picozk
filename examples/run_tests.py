@@ -10,3 +10,5 @@ for test in tests:
     os.system(f'python {test}')
     if os.path.exists('miniwizpl_test.rel'):
         os.system('wtk-firealarm miniwizpl_test.*')
+    if os.path.exists('miniwizpl_test.rel'):
+        os.system('rm miniwizpl_test.*')
