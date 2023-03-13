@@ -111,6 +111,11 @@ class Wire:
         return Wire(r, int(val_of(self) == val_of(other)))
     __req__ = __eq__
 
+    def __bool__(self):
+        raise Exception('unsupported')
+
+    def __int__(self):
+        raise Exception('unsupported')
 
     def __pow__(self, other):
         def exp_by_squaring(x, n):
