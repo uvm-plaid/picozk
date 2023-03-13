@@ -1,9 +1,10 @@
 import sys
 from picowizpl import *
 
-if len(sys.argv) != 2:
-    print("Usage: python dfa_example.py <target_filename>")
-    sys.exit()
+if len(sys.argv) == 2:
+    filename = sys.argv[1]
+else:
+    filename = 'run_tests.py'
 
 # the accept state is 1000000
 accept_state = 1000000
@@ -33,7 +34,7 @@ def dfa_from_string(text):
     return next_state
 
 # read the target file & convert to secret string
-with open(sys.argv[1], 'r') as f:
+with open(filename, 'r') as f:
     file_data = f.read()
 
 with PicoWizPLCompiler('miniwizpl_test'):
