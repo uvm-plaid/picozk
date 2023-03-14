@@ -118,17 +118,14 @@ with PicoWizPLCompiler('miniwizpl_test', options=['ram']):
     for i, v in enumerate(st.ram.val):
         print(i, ':', v)
 
-    def classify_st(x, st, d):
-        # WHY is this print statement needed
-        # to make the assertions succeed!??!?!?!!?
-        print('classify:', d, st)
+    def classify_st(x, lst, d):
         if d == 0:
-            label, _ = st.get_data()
+            label, _ = lst.get_data()
             return label
         else:
-            feature, threshold = st.get_data()
+            feature, threshold = lst.get_data()
             cond = x[feature] < threshold
-            next_st = st.get_branch(cond)
+            next_st = lst.get_branch(cond)
             return classify_st(x, next_st, d-1)
 
     for i, x_i in enumerate(X):
