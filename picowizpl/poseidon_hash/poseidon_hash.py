@@ -28,11 +28,17 @@ class PoseidonHash:
                                 security_level,
                                 self.t, self.alpha, True)
 
-        self.rc_field = rc.calc_round_constants(self.t, self.full_round, self.partial_round,
-                                                self.p, self.field_p, self.alpha, self.prime_bit_len)
-        self.mds_matrix = np.array(rc.mds_matrix_generator(self.field_p, self.t))
+        self.rc_field = rc.calc_round_constants(self.t,
+                                                self.full_round,
+                                                self.partial_round,
+                                                self.p,
+                                                self.field_p,
+                                                self.alpha,
+                                                self.prime_bit_len)
+        self.rc_field = [int(x) for x in self.rc_field]
+        self.mds_matrix = np.array(rc.mds_matrix_generator(self.field_p, self.t)).astype(int)
 
-        self.state = [self.field_p(0) for _ in range(t)]
+        self.state = [0 for _ in range(t)]
 
     def s_box(self, element):
         return pow(element, self.alpha)
@@ -58,7 +64,7 @@ class PoseidonHash:
 
     def hash(self, input_vec):
         self.rc_counter = 0
-        padded_input = input_vec + [self.field_p(0) for _ in range(self.t-len(input_vec))]
+        padded_input = input_vec + [0 for _ in range(self.t-len(input_vec))]
         self.state = [padded_input[i] + self.state[i] for i in range(self.t)]
 
         self.full_rounds()

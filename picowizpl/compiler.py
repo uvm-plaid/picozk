@@ -4,7 +4,7 @@ config.DISABLE_JIT = True
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
-import galois
+#import galois
 import functools
 from typing import List
 
@@ -12,7 +12,8 @@ from typing import List
 cc = None
 
 def SecretInt(x):
-    return cc.add_to_witness(x)
+    assert x % cc.field == x
+    return cc.add_to_witness(x % cc.field)
 
 def val_of(x):
     if isinstance(x, Wire):
@@ -57,7 +58,7 @@ class Wire:
     def __neg__(self):
         r = cc.next_wire()
         cc.emit(f'  {r} <- @mulc({self.wire}, < {cc.field - 1} >);')
-        return Wire(r, -self.val)
+        return Wire(r, -self.val % cc.field)
 
     def __invert__(self):
         return (-self) + 1
@@ -71,12 +72,12 @@ class Wire:
                 cc.emit(f'  {r} <- @add({self.wire}, {cc.wire_of(other)});')
             elif isinstance(other, int):
                 cc.emit(f'  {r} <- @addc({self.wire}, <{other%cc.field}>);')
-            elif isinstance(other, galois.Array):
-                cc.emit(f'  {r} <- @addc({self.wire}, <{int(other)}>);')
+            # elif isinstance(other, galois.Array):
+            #     cc.emit(f'  {r} <- @addc({self.wire}, <{int(other)}>);')
             else:
                 raise Exception(f'unknown type for addition: {type(other)}')
 
-            return Wire(r, self.val + val_of(other))
+            return Wire(r, self.val + val_of(other) % cc.field)
 
     __radd__ = __add__
 
@@ -94,12 +95,12 @@ class Wire:
                 cc.emit(f'  {r} <- @mul({self.wire}, {cc.wire_of(other)});')
             elif isinstance(other, int):
                 cc.emit(f'  {r} <- @mulc({self.wire}, <{other%cc.field}>);')
-            elif isinstance(other, galois.Array):
-                cc.emit(f'  {r} <- @mulc({self.wire}, <{int(other)}>);')
+            # elif isinstance(other, galois.Array):
+            #     cc.emit(f'  {r} <- @mulc({self.wire}, <{int(other)}>);')
             else:
                 raise Exception(f'unknown type for multiplication: {type(other)}')
 
-            return Wire(r, self.val * val_of(other))
+            return Wire(r, self.val * val_of(other) % cc.field)
 
     __rmul__ = __mul__
 
@@ -135,20 +136,20 @@ class WireBundle:
     wires: List[Wire]
 
 
-def mk_defer(new_fn, old_fn):
-    def defer_fn(x, y):
-        if isinstance(x, Wire):
-            return new_fn(x, y)
-        elif isinstance(y, Wire):
-            return new_fn(y, x)
-        else:
-            return old_fn(x, y)
-    return defer_fn
+# def mk_defer(new_fn, old_fn):
+#     def defer_fn(x, y):
+#         if isinstance(x, Wire):
+#             return new_fn(x, y)
+#         elif isinstance(y, Wire):
+#             return new_fn(y, x)
+#         else:
+#             return old_fn(x, y)
+#     return defer_fn
 
-galois.Array.__add__ = mk_defer(Wire.__add__, galois.Array.__add__)
-galois.Array.__mul__ = mk_defer(Wire.__mul__, galois.Array.__mul__)
-galois.Array.__radd__ = mk_defer(Wire.__radd__, galois.Array.__radd__)
-galois.Array.__rmul__ = mk_defer(Wire.__rmul__, galois.Array.__rmul__)
+# galois.Array.__add__ = mk_defer(Wire.__add__, galois.Array.__add__)
+# galois.Array.__mul__ = mk_defer(Wire.__mul__, galois.Array.__mul__)
+# galois.Array.__radd__ = mk_defer(Wire.__radd__, galois.Array.__radd__)
+# galois.Array.__rmul__ = mk_defer(Wire.__rmul__, galois.Array.__rmul__)
 
 class PicoWizPLCompiler(object):
     def __init__(self, file_prefix, field=2**61-1, options=[]):
@@ -177,7 +178,9 @@ class PicoWizPLCompiler(object):
     def wire_of(self, e):
         if isinstance(e, Wire):
             return e.wire
-        elif isinstance(e, (int, galois.Array)):
+        # elif isinstance(e, (int, galois.Array)):
+        #     return self.constant_wire(e)
+        elif isinstance(e, int):
             return self.constant_wire(e)
         else:
             raise Exception('no wire for value', e, 'of type', type(e))
