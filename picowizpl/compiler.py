@@ -115,6 +115,10 @@ class Wire:
         result = val_of(self) < val_of(other)
         return cc.add_to_witness(int(result))
 
+    def __le__(self, other):
+        result = val_of(self) <= val_of(other)
+        return cc.add_to_witness(int(result))
+
     def __bool__(self):
         raise Exception('unsupported')
 
