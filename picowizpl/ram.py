@@ -15,11 +15,11 @@ class RAM:
 
         self.cc.emit(f'  {self.wire} <- @call(init_ram_{rn}, {self.cc.wire_of(0)});')
         self.cc.emit()
-        self.val = [None for _ in range(size)]
+        self.val = [0 for _ in range(size)]
 
     def write(self, idx, val):
         self.cc.emit(f'  @call(write_ram, {self.wire}, {self.cc.wire_of(idx)}, {self.cc.wire_of(val)});')
-        self.val[idx] = val_of(val)
+        self.val[val_of(idx)] = val_of(val)
 
     def read(self, idx):
         r = self.cc.next_wire()
