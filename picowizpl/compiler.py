@@ -44,6 +44,39 @@ class Wire:
     wire: str
     val: any
 
+    def __neg__(self):
+        r = cc.emit_gate('mulc', self.wire, f'< {cc.field - 1} >')
+        return Wire(r, -self.val % cc.field)
+
+    def __add__(self, other):
+        if not isinstance(other, Wire) and other == 0:
+            return self
+        else:
+            if isinstance(other, Wire):
+                r = cc.emit_gate('add', self.wire, other.wire)
+            elif isinstance(other, int):
+                r = cc.emit_gate('addc', self.wire, f'< {other % cc.field} >')
+            else:
+                raise Exception(f'unknown type for addition: {type(other)}')
+
+            return Wire(r, self.val + val_of(other) % cc.field)
+    __radd__ = __add__
+
+    def __mul__(self, other):
+        if not isinstance(other, Wire) and other == 0:
+            return other
+        else:
+            if isinstance(other, Wire):
+                r = cc.emit_gate('mul', self.wire, other.wire)
+            elif isinstance(other, int):
+                r = cc.emit_gate('mulc', self.wire, f'< {other%cc.field} >')
+            else:
+                raise Exception(f'unknown type for multiplication: {type(other)}')
+
+            return Wire(r, self.val * val_of(other) % cc.field)
+
+    __rmul__ = __mul__
+
     def as_gf(self, gf):
         return Wire(self.wire, gf(self.val))
 
@@ -55,54 +88,14 @@ class Wire:
         return (self * other) + (self * (~other)) + ((~self) * other)
     __ror__ = __or__
 
-    def __neg__(self):
-        r = cc.next_wire()
-        cc.emit(f'  {r} <- @mulc({self.wire}, < {cc.field - 1} >);')
-        return Wire(r, -self.val % cc.field)
-
     def __invert__(self):
         return (-self) + 1
 
-    def __add__(self, other):
-        if not isinstance(other, Wire) and other == 0:
-            return self
-        else:
-            r = cc.next_wire()
-            if isinstance(other, Wire):
-                cc.emit(f'  {r} <- @add({self.wire}, {cc.wire_of(other)});')
-            elif isinstance(other, int):
-                cc.emit(f'  {r} <- @addc({self.wire}, <{other%cc.field}>);')
-            # elif isinstance(other, galois.Array):
-            #     cc.emit(f'  {r} <- @addc({self.wire}, <{int(other)}>);')
-            else:
-                raise Exception(f'unknown type for addition: {type(other)}')
-
-            return Wire(r, self.val + val_of(other) % cc.field)
-
-    __radd__ = __add__
 
     def __sub__(self, other):
         nother = - other
         return self + nother
     __rsub__ = __sub__
-
-    def __mul__(self, other):
-        if not isinstance(other, Wire) and other == 0:
-            return other
-        else:
-            r = cc.next_wire()
-            if isinstance(other, Wire):
-                cc.emit(f'  {r} <- @mul({self.wire}, {cc.wire_of(other)});')
-            elif isinstance(other, int):
-                cc.emit(f'  {r} <- @mulc({self.wire}, <{other%cc.field}>);')
-            # elif isinstance(other, galois.Array):
-            #     cc.emit(f'  {r} <- @mulc({self.wire}, <{int(other)}>);')
-            else:
-                raise Exception(f'unknown type for multiplication: {type(other)}')
-
-            return Wire(r, self.val * val_of(other) % cc.field)
-
-    __rmul__ = __mul__
 
     def __eq__(self, other):
         diff = self - other
@@ -169,6 +162,12 @@ class PicoWizPLCompiler(object):
     def emit(self, s=''):
         self.relation_file.write(s)
         self.relation_file.write('\n')
+
+    def emit_gate(self, gate, *args):
+        args_str = ', '.join([str(a) for a in args])
+        r = self.next_wire()
+        self.emit(f'  {r} <- @{gate}({args_str});')
+        return r
 
     def add_to_witness(self, x):
         r = self.next_wire()

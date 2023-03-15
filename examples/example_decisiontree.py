@@ -114,9 +114,9 @@ results = [classify(x, t) for x in X]
 with PicoWizPLCompiler('miniwizpl_test', options=['ram']):
     st = encode_tree(t)
 
-    print(st)
-    for i, v in enumerate(st.ram.val):
-        print(i, ':', v)
+    # print(st)
+    # for i, v in enumerate(st.ram.val):
+    #     print(i, ':', v)
 
     def classify_st(x, lst, d):
         if d == 0:
@@ -132,7 +132,7 @@ with PicoWizPLCompiler('miniwizpl_test', options=['ram']):
         xx = SecretIndexList([int(x*SCALE) for x in x_i])
         result = classify_st(xx, st, 8)
         correct = result - results[0]
-        print(correct)
+        #print(correct)
         assert0(correct)
 
 #print(t)
