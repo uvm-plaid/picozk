@@ -28,10 +28,13 @@ def val_of(x):
 
 def allocate(n):
     i = cc.current_wire
-    cc.emit(f'  @new(${i} ... ${i + n-1});')
+    cc.emit_gate('new', f'${i} ... ${i + n-1}', effect=True)
+
+def reveal(x):
+    cc.emit_gate('assert_zero', cc.wire_of(x - val_of(x)), effect=True)
 
 def assert0(x):
-    cc.emit(f'  @assert_zero({cc.wire_of(x)});')
+    cc.emit_gate('assert_zero', cc.wire_of(x), effect=True)
 
 def mux(a, b, c):
     if isinstance(a, int):
@@ -99,8 +102,7 @@ class Wire:
 
     def __eq__(self, other):
         diff = self - other
-        r = cc.next_wire()
-        cc.emit(f'  {r} <- @call(mux, {cc.wire_of(diff)}, {cc.wire_of(1)}, {cc.wire_of(0)});')
+        r = cc.emit_gate('call', 'mux', cc.wire_of(diff), cc.wire_of(1), cc.wire_of(0))
         return Wire(r, int(val_of(self) == val_of(other)))
     __req__ = __eq__
 
@@ -163,11 +165,15 @@ class PicoWizPLCompiler(object):
         self.relation_file.write(s)
         self.relation_file.write('\n')
 
-    def emit_gate(self, gate, *args):
+    def emit_gate(self, gate, *args, effect=False):
         args_str = ', '.join([str(a) for a in args])
-        r = self.next_wire()
-        self.emit(f'  {r} <- @{gate}({args_str});')
-        return r
+        if effect:
+            self.emit(f'  @{gate}({args_str});')
+            return
+        else:
+            r = self.next_wire()
+            self.emit(f'  {r} <- @{gate}({args_str});')
+            return r
 
     def add_to_witness(self, x):
         r = self.next_wire()
