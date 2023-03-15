@@ -31,10 +31,10 @@ def allocate(n):
     cc.emit_gate('new', f'${i} ... ${i + n-1}', effect=True)
 
 def reveal(x):
-    cc.emit_gate('assert_zero', cc.wire_of(x - val_of(x)), effect=True)
+    cc.emit_gate('assert_zero', (x - val_of(x)).wire, effect=True)
 
 def assert0(x):
-    cc.emit_gate('assert_zero', cc.wire_of(x), effect=True)
+    cc.emit_gate('assert_zero', x.wire, effect=True)
 
 def mux(a, b, c):
     if isinstance(a, int):
@@ -46,10 +46,6 @@ def mux(a, b, c):
 class Wire:
     wire: str
     val: any
-
-    def __neg__(self):
-        r = cc.emit_gate('mulc', self.wire, f'< {cc.field - 1} >')
-        return Wire(r, -self.val % cc.field)
 
     def __add__(self, other):
         if not isinstance(other, Wire) and other == 0:
@@ -80,6 +76,9 @@ class Wire:
 
     __rmul__ = __mul__
 
+    def __neg__(self):
+        return self * (cc.field - 1)
+
     def as_gf(self, gf):
         return Wire(self.wire, gf(self.val))
 
@@ -96,8 +95,7 @@ class Wire:
 
 
     def __sub__(self, other):
-        nother = - other
-        return self + nother
+        return self + (-other)
     __rsub__ = __sub__
 
     def __eq__(self, other):
