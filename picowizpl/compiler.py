@@ -2,40 +2,23 @@ from numba import jit, config
 config.DISABLE_JIT = True
 
 from dataclasses import dataclass
+from typing import List
 import pandas as pd
 import numpy as np
-#import galois
 import functools
-import picowizpl.util as util
-from typing import List
-
-# Current compiler
-cc = None
+from .wire import *
+from .binary_int import BinaryInt
+from . import config
 
 def SecretInt(x):
-    assert x % cc.field == x
-    return cc.add_to_witness(x % cc.field)
-
-def val_of(x):
-    if isinstance(x, Wire):
-        if x.val is None:
-            raise Exception(f'Attempt to find value of None in object {x}')
-        else:
-            return x.val
-    elif isinstance(x, bool):
-        return int(x)
-    else:
-        return x
-
-def allocate(n):
-    i = cc.current_wire
-    cc.emit_gate('new', f'${i} ... ${i + n-1}', effect=True)
+    assert x % config.cc.field == x
+    return config.cc.add_to_witness(x % config.cc.field)
 
 def reveal(x):
-    cc.emit_gate('assert_zero', (x - val_of(x)).wire, effect=True)
+    config.cc.emit_gate('assert_zero', (x - val_of(x)).wire, effect=True)
 
 def assert0(x):
-    cc.emit_gate('assert_zero', x.wire, effect=True)
+    config.cc.emit_gate('assert_zero', x.wire, effect=True)
 
 def mux(a, b, c):
     if isinstance(a, int):
@@ -43,103 +26,6 @@ def mux(a, b, c):
     else:
         return a * b + (~a) * c
 
-@dataclass
-class Wire:
-    wire: str
-    val: int
-    field: int
-
-    def __add__(self, other):
-        if not isinstance(other, Wire) and other == 0:
-            return self
-        else:
-            if isinstance(other, Wire):
-                assert other.field == self.field
-                r = cc.emit_gate('add', self.wire, other.wire)
-            elif isinstance(other, int):
-                r = cc.emit_gate('addc', self.wire, f'< {other % cc.field} >')
-            else:
-                raise Exception(f'unknown type for addition: {type(other)}')
-
-            return Wire(r, self.val + val_of(other) % self.field, self.field)
-    __radd__ = __add__
-
-    def __mul__(self, other):
-        if not isinstance(other, Wire) and other == 0:
-            return other
-        else:
-            if isinstance(other, Wire):
-                assert other.field == self.field
-                r = cc.emit_gate('mul', self.wire, other.wire)
-            elif isinstance(other, int):
-                r = cc.emit_gate('mulc', self.wire, f'< {other%cc.field} >')
-            else:
-                raise Exception(f'unknown type for multiplication: {type(other)}')
-
-            return Wire(r, self.val * val_of(other) % self.field, self.field)
-
-    __rmul__ = __mul__
-
-    def __neg__(self):
-        return self * (cc.field - 1)
-
-    def __and__(self, other):
-        return self * other
-    __rand__ = __and__
-
-    def __or__(self, other):
-        return (self * other) + (self * (~other)) + ((~self) * other)
-    __ror__ = __or__
-
-    def __invert__(self):
-        return (-self) + 1
-
-
-    def __sub__(self, other):
-        return self + (-other)
-    __rsub__ = __sub__
-
-    def __eq__(self, other):
-        diff = self - other
-        r = cc.emit_gate('call', 'mux', cc.wire_of(diff), cc.wire_of(1), cc.wire_of(0))
-        return Wire(r, int(val_of(self) == val_of(other)), self.field)
-    __req__ = __eq__
-
-    def __lt__(self, other):
-        result = val_of(self) < val_of(other)
-        return cc.add_to_witness(int(result))
-
-    def __le__(self, other):
-        result = val_of(self) <= val_of(other)
-        return cc.add_to_witness(int(result))
-
-    def __bool__(self):
-        raise Exception('unsupported')
-
-    def __int__(self):
-        raise Exception('unsupported')
-
-    def __pow__(self, other):
-        def exp_by_squaring(x, n):
-            assert n > 0
-            if n%2 == 0:
-                if n // 2 == 1:
-                    return x * x
-                else:
-                    return exp_by_squaring(x * x,  n // 2)
-            else:
-                return x * exp_by_squaring(x * x, (n - 1) // 2)
-
-        assert isinstance(other, int)
-        return exp_by_squaring(self, other)
-
-    def to_binary(self):
-        print('yep')
-        print(self)
-        bits = util.encode_int(self.val, self.field)
-        print(bits)
-        intv = util.decode_int(bits)
-        print(intv)
 
 @dataclass
 class WireBundle:
@@ -190,7 +76,7 @@ class PicoWizPLCompiler(object):
         r = self.next_wire()
         self.emit(f'  {r} <- @private();')
         self.witness_file.write(f'  < {x} >;\n')
-        return Wire(r, x, cc.field)
+        return Wire(r, x, config.cc.field)
 
     @functools.cache
     def constant_wire(self, e):
@@ -199,16 +85,6 @@ class PicoWizPLCompiler(object):
         self.emit(f'  {r} <- <{v}>;')
         return r
 
-    def wire_of(self, e):
-        if isinstance(e, Wire):
-            return e.wire
-        # elif isinstance(e, (int, galois.Array)):
-        #     return self.constant_wire(e)
-        elif isinstance(e, int):
-            return self.constant_wire(e)
-        else:
-            raise Exception('no wire for value', e, 'of type', type(e))
-
     def next_wire(self):
         r = self.current_wire
         self.current_wire += 1
@@ -216,6 +92,7 @@ class PicoWizPLCompiler(object):
 
     def __enter__(self):
         global cc
+        config.cc = self
         cc = self
         self.witness_file = open(self.file_prefix + '.type0.wit', 'w')
         self.relation_file = open(self.file_prefix + '.rel', 'w')

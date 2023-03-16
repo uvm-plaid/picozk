@@ -1,9 +1,9 @@
-from picowizpl import Wire, val_of
-import picowizpl.compiler
+from .wire import *
+from . import compiler
 
 class RAM:
     def __init__(self, size):
-        self.cc = picowizpl.compiler.cc
+        self.cc = compiler.cc
         self.size = size
         self.wire = self.cc.next_wire()
         rn = self.wire.replace('$', '')
@@ -12,15 +12,15 @@ class RAM:
         self.cc.emit(f'    @plugin(ram_arith_v0, init, {self.size});')
         self.cc.emit()
 
-        self.cc.emit(f'  {self.wire} <- @call(init_ram_{rn}, {self.cc.wire_of(0)});')
+        self.cc.emit(f'  {self.wire} <- @call(init_ram_{rn}, {wire_of(0)});')
         self.cc.emit()
         self.val = [0 for _ in range(size)]
 
     def write(self, idx, val):
-        self.cc.emit(f'  @call(write_ram, {self.wire}, {self.cc.wire_of(idx)}, {self.cc.wire_of(val)});')
+        self.cc.emit(f'  @call(write_ram, {self.wire}, {wire_of(idx)}, {wire_of(val)});')
         self.val[val_of(idx)] = val_of(val)
 
     def read(self, idx):
         r = self.cc.next_wire()
-        self.cc.emit(f'  {r} <- @call(read_ram, {self.wire}, {self.cc.wire_of(idx)});')
+        self.cc.emit(f'  {r} <- @call(read_ram, {self.wire}, {wire_of(idx)});')
         return Wire(r, self.val[val_of(idx)], self.cc.field)
