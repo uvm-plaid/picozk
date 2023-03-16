@@ -7,7 +7,6 @@ def gensym(x):
 def decode_int(bits):
     return int("".join(str(x) for x in reversed(bits)), 2)
 
-
 def encode_int(i, field):
     bitwidth = get_bits_for_field(field)
     bit_format = f'{{0:0{bitwidth}b}}'

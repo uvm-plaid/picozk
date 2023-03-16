@@ -1,10 +1,7 @@
 from dataclasses import dataclass
 from . import util
 from . import config
-
-def allocate(n):
-    i = config.cc.current_wire
-    config.cc.emit_gate('new', f'${i} ... ${i + n-1}', effect=True)
+from .binary_int import *
 
 def val_of(x):
     if isinstance(x, Wire):
@@ -33,33 +30,37 @@ class Wire:
     field: int
 
     def __add__(self, other):
-        if not isinstance(other, Wire) and other == 0:
+        if isinstance(other, int) and other % self.field == 0:
             return self
         else:
             if isinstance(other, Wire):
                 assert other.field == self.field
-                r = config.cc.emit_gate('add', self.wire, other.wire)
+                r = config.cc.emit_gate('add', self.wire, other.wire,
+                                        type=self.field)
             elif isinstance(other, int):
-                r = config.cc.emit_gate('addc', self.wire, f'< {other % self.field} >')
+                r = config.cc.emit_gate('addc', self.wire, f'< {other % self.field} >',
+                                        type=self.field)
             else:
                 raise Exception(f'unknown type for addition: {type(other)}')
 
-            return Wire(r, self.val + val_of(other) % self.field, self.field)
+            return Wire(r, (self.val + val_of(other)) % self.field, self.field)
     __radd__ = __add__
 
     def __mul__(self, other):
-        if not isinstance(other, Wire) and other == 0:
-            return other
+        if isinstance(other, int) and other % self.field == 0:
+            return 0
         else:
             if isinstance(other, Wire):
                 assert other.field == self.field
-                r = config.cc.emit_gate('mul', self.wire, other.wire)
+                r = config.cc.emit_gate('mul', self.wire, other.wire,
+                                        type=self.field)
             elif isinstance(other, int):
-                r = config.cc.emit_gate('mulc', self.wire, f'< {other % self.field} >')
+                r = config.cc.emit_gate('mulc', self.wire, f'< {other % self.field} >',
+                                        type=self.field)
             else:
                 raise Exception(f'unknown type for multiplication: {type(other)}')
 
-            return Wire(r, self.val * val_of(other) % self.field, self.field)
+            return Wire(r, (self.val * val_of(other)) % self.field, self.field)
 
     __rmul__ = __mul__
 
@@ -117,9 +118,9 @@ class Wire:
         return exp_by_squaring(self, other)
 
     def to_binary(self):
-        print('yep')
-        print(self)
         bits = util.encode_int(self.val, self.field)
-        print(bits)
         intv = util.decode_int(bits)
-        print(intv)
+        wire_names = config.cc.allocate(len(bits))
+        config.cc.emit(f'  {config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]} <- @convert({config.cc.ARITH_TYPE}: {self.wire});')
+        wires = [Wire(name, val, 2) for name, val in zip(wire_names, bits)]
+        return BinaryInt(wires)

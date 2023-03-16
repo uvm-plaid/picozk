@@ -1,5 +1,5 @@
-from numba import jit, config
-config.DISABLE_JIT = True
+import numba
+numba.config.DISABLE_JIT = True
 
 from dataclasses import dataclass
 from typing import List
@@ -15,10 +15,10 @@ def SecretInt(x):
     return config.cc.add_to_witness(x % config.cc.field)
 
 def reveal(x):
-    config.cc.emit_gate('assert_zero', (x - val_of(x)).wire, effect=True)
+    config.cc.emit_gate('assert_zero', (x - val_of(x)).wire, effect=True, type=x.field)
 
 def assert0(x):
-    config.cc.emit_gate('assert_zero', x.wire, effect=True)
+    config.cc.emit_gate('assert_zero', x.wire, effect=True, type=x.field)
 
 def mux(a, b, c):
     if isinstance(a, int):
@@ -62,15 +62,32 @@ class PicoWizPLCompiler(object):
         self.relation_file.write(s)
         self.relation_file.write('\n')
 
-    def emit_gate(self, gate, *args, effect=False):
+    def type_of(self, field):
+        if field == self.field:
+            return self.ARITH_TYPE
+        elif field == 2:
+            return self.BINARY_TYPE
+        elif field == None:
+            return self.ARITH_TYPE
+        else:
+            raise Exception('no known type for field:', field)
+
+    def emit_gate(self, gate, *args, effect=False, type=None):
+        type_arg = self.type_of(type)
         args_str = ', '.join([str(a) for a in args])
         if effect:
-            self.emit(f'  @{gate}({args_str});')
+            self.emit(f'  @{gate}({type_arg}: {args_str});')
             return
         else:
             r = self.next_wire()
-            self.emit(f'  {r} <- @{gate}({args_str});')
+            self.emit(f'  {r} <- @{gate}({type_arg}: {args_str});')
             return r
+
+    def allocate(self, n):
+        i = self.current_wire
+        self.current_wire += n
+        self.emit_gate('new', f'${i} ... ${i + n-1}', effect=True)
+        return [f'${i}' for i in range(i, i+n)]
 
     def add_to_witness(self, x):
         r = self.next_wire()
@@ -106,6 +123,9 @@ class PicoWizPLCompiler(object):
 
         self.emit(f'@type field {self.field};')
         self.emit(f'@type field 2;')
+        bits_per_fe = util.get_bits_for_field(self.field)
+        self.emit(f'@convert(@out: {self.ARITH_TYPE}:1, @in: {self.BINARY_TYPE}:{bits_per_fe});')
+        self.emit(f'@convert(@out: {self.BINARY_TYPE}:{bits_per_fe}, @in: {self.ARITH_TYPE}:1);')
 
         if 'ram' in self.options:
             s = '@type @plugin(ram_arith_v0, ram, 0, {0}, {1}, {2});'
