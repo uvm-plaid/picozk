@@ -131,7 +131,7 @@ with PicoWizPLCompiler('miniwizpl_test', options=['ram']):
     for i, x_i in enumerate(X):
         xx = SecretIndexList([int(x*SCALE) for x in x_i])
         result = classify_st(xx, st, 8)
-        difference = result - results[0]
+        difference = result - int(results[0])
         #print(correct)
         assert0(difference)
 

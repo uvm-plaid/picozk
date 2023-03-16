@@ -72,6 +72,12 @@ class PicoWizPLCompiler(object):
         else:
             raise Exception('no known type for field:', field)
 
+    def emit_call(self, call, *args):
+        args_str = ', '.join([str(a) for a in args])
+        r = self.next_wire()
+        self.emit(f'  {r} <- @call({call}, {args_str});')
+        return r
+
     def emit_gate(self, gate, *args, effect=False, field=None):
         type_arg = self.type_of(field)
         args_str = ', '.join([str(a) for a in args])
@@ -123,15 +129,16 @@ class PicoWizPLCompiler(object):
 
         self.emit(f'@type field {self.field};')
         self.emit(f'@type field 2;')
-        bits_per_fe = util.get_bits_for_field(self.field)
-        self.emit(f'@convert(@out: {self.ARITH_TYPE}:1, @in: {self.BINARY_TYPE}:{bits_per_fe});')
-        self.emit(f'@convert(@out: {self.BINARY_TYPE}:{bits_per_fe}, @in: {self.ARITH_TYPE}:1);')
 
         if 'ram' in self.options:
             s = '@type @plugin(ram_arith_v0, ram, 0, {0}, {1}, {2});'
             self.emit(s.format(20, # number of rams
                                2000, # total allocation size
                                2000)) # not sure
+
+        bits_per_fe = util.get_bits_for_field(self.field)
+        self.emit(f'@convert(@out: {self.ARITH_TYPE}:1, @in: {self.BINARY_TYPE}:{bits_per_fe});')
+        self.emit(f'@convert(@out: {self.BINARY_TYPE}:{bits_per_fe}, @in: {self.ARITH_TYPE}:1);')
 
         self.emit('@begin')
 

@@ -85,7 +85,7 @@ class Wire:
 
     def __eq__(self, other):
         diff = self - other
-        r = config.cc.emit_gate('call', 'mux', wire_of(diff), wire_of(1), wire_of(0))
+        r = config.cc.emit_call('mux', wire_of(diff), wire_of(1), wire_of(0))
         return Wire(r, int(val_of(self) == val_of(other)), self.field)
     __req__ = __eq__
 
