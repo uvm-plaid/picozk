@@ -6,7 +6,7 @@ import galois
 from math import log2, ceil
 
 class PoseidonHash:
-    def __init__(self, p, alpha, input_rate, t, security_level = 128):
+    def __init__(self, p, alpha, input_rate, t=None, security_level = 128):
         self.p = p
         self.security_level = security_level
         self.prime_bit_len = ceil(log2(p))
@@ -17,7 +17,10 @@ class PoseidonHash:
             raise RuntimeError("Not available alpha")
 
         self.input_rate = input_rate
-        self.t = t
+        if t == None:
+            self.t = input_rate
+        else:
+            self.t = t
         self.field_p = galois.GF(p)
 
         if 2 ** self.security_level > self.p ** self.t:
@@ -38,7 +41,7 @@ class PoseidonHash:
         self.rc_field = [int(x) for x in self.rc_field]
         self.mds_matrix = np.array(rc.mds_matrix_generator(self.field_p, self.t)).astype(int)
 
-        self.state = [0 for _ in range(t)]
+        self.state = [0 for _ in range(self.t)]
 
     def s_box(self, element):
         return pow(element, self.alpha)
