@@ -43,7 +43,7 @@ class Wire:
             else:
                 raise Exception(f'unknown type for addition: {type(other)}')
 
-            return Wire(r, (self.val + val_of(other)) % self.field, self.field)
+            return type(self)(r, (self.val + val_of(other)) % self.field, self.field)
     __radd__ = __add__
 
     def __mul__(self, other):
@@ -60,10 +60,17 @@ class Wire:
             else:
                 raise Exception(f'unknown type for multiplication: {type(other)}')
 
-            return Wire(r, (self.val * val_of(other)) % self.field, self.field)
+            return type(self)(r, (self.val * val_of(other)) % self.field, self.field)
 
     __rmul__ = __mul__
 
+    def __bool__(self):
+        raise Exception('unsupported')
+
+    def __int__(self):
+        raise Exception('unsupported')
+
+class ArithmeticWire(Wire):
     def __neg__(self):
         return self * (self.field - 1)
 
@@ -86,7 +93,7 @@ class Wire:
     def __eq__(self, other):
         diff = self - other
         r = config.cc.emit_call('mux', wire_of(diff), wire_of(1), wire_of(0))
-        return Wire(r, int(val_of(self) == val_of(other)), self.field)
+        return ArithmeticWire(r, int(val_of(self) == val_of(other)), self.field)
     __req__ = __eq__
 
     def is_negative(self):
@@ -119,9 +126,10 @@ class Wire:
         intv = util.decode_int(bits)
         wire_names = config.cc.allocate(len(bits))
         config.cc.emit(f'  {config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]} <- @convert({config.cc.ARITH_TYPE}: {self.wire});')
-        wires = [Wire(name, val, 2) for name, val in zip(wire_names, bits)]
+        wires = [BinaryWire(name, val, 2) for name, val in zip(wire_names, bits)]
         return BinaryInt(wires)
 
+class BinaryWire(Wire):
     def to_arith(self):
         assert self.field == 2
         field = config.cc.field
@@ -137,14 +145,7 @@ class Wire:
 
         config.cc.emit(f'  {config.cc.ARITH_TYPE}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
 
-        return Wire(r, self.val, field)
+        return ArithmeticWire(r, self.val, field)
 
         # result = val_of(self) < val_of(other)
         # return config.cc.add_to_witness(int(result))
-
-
-    def __bool__(self):
-        raise Exception('unsupported')
-
-    def __int__(self):
-        raise Exception('unsupported')

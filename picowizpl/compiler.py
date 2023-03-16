@@ -99,7 +99,7 @@ class PicoWizPLCompiler(object):
         r = self.next_wire()
         self.emit(f'  {r} <- @private();')
         self.witness_file.write(f'  < {x} >;\n')
-        return Wire(r, x, config.cc.field)
+        return ArithmeticWire(r, x, config.cc.field)
 
     @functools.cache
     def constant_wire(self, e):
