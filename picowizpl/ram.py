@@ -24,4 +24,4 @@ class RAM:
     def read(self, idx):
         r = self.cc.next_wire()
         self.cc.emit(f'  {r} <- @call(read_ram, {self.wire}, {self.cc.wire_of(idx)});')
-        return Wire(r, self.val[val_of(idx)])
+        return Wire(r, self.val[val_of(idx)], self.cc.field)

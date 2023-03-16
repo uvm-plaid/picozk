@@ -45,20 +45,22 @@ def mux(a, b, c):
 @dataclass
 class Wire:
     wire: str
-    val: any
+    val: int
+    field: int
 
     def __add__(self, other):
         if not isinstance(other, Wire) and other == 0:
             return self
         else:
             if isinstance(other, Wire):
+                assert other.field == self.field
                 r = cc.emit_gate('add', self.wire, other.wire)
             elif isinstance(other, int):
                 r = cc.emit_gate('addc', self.wire, f'< {other % cc.field} >')
             else:
                 raise Exception(f'unknown type for addition: {type(other)}')
 
-            return Wire(r, self.val + val_of(other) % cc.field)
+            return Wire(r, self.val + val_of(other) % self.field, self.field)
     __radd__ = __add__
 
     def __mul__(self, other):
@@ -66,21 +68,19 @@ class Wire:
             return other
         else:
             if isinstance(other, Wire):
+                assert other.field == self.field
                 r = cc.emit_gate('mul', self.wire, other.wire)
             elif isinstance(other, int):
                 r = cc.emit_gate('mulc', self.wire, f'< {other%cc.field} >')
             else:
                 raise Exception(f'unknown type for multiplication: {type(other)}')
 
-            return Wire(r, self.val * val_of(other) % cc.field)
+            return Wire(r, self.val * val_of(other) % self.field, self.field)
 
     __rmul__ = __mul__
 
     def __neg__(self):
         return self * (cc.field - 1)
-
-    def as_gf(self, gf):
-        return Wire(self.wire, gf(self.val))
 
     def __and__(self, other):
         return self * other
@@ -101,7 +101,7 @@ class Wire:
     def __eq__(self, other):
         diff = self - other
         r = cc.emit_gate('call', 'mux', cc.wire_of(diff), cc.wire_of(1), cc.wire_of(0))
-        return Wire(r, int(val_of(self) == val_of(other)))
+        return Wire(r, int(val_of(self) == val_of(other)), self.field)
     __req__ = __eq__
 
     def __lt__(self, other):
@@ -177,7 +177,7 @@ class PicoWizPLCompiler(object):
         r = self.next_wire()
         self.emit(f'  {r} <- @private();')
         self.witness_file.write(f'  < {x} >;\n')
-        return Wire(r, x)
+        return Wire(r, x, cc.field)
 
     @functools.cache
     def constant_wire(self, e):
