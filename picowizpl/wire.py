@@ -65,7 +65,7 @@ class Wire:
     __rmul__ = __mul__
 
     def __neg__(self):
-        return self * (config.cc.field - 1)
+        return self * (self.field - 1)
 
     def __and__(self, other):
         return self * other
