@@ -5,11 +5,10 @@ class RAM:
     def __init__(self, size):
         self.cc = picowizpl.compiler.cc
         self.size = size
-        ram_type = 1
         self.wire = self.cc.next_wire()
         rn = self.wire.replace('$', '')
         self.cc.emit()
-        self.cc.emit(f'  @function(init_ram_{rn}, @out: {ram_type}:1, @in: 0:1)')
+        self.cc.emit(f'  @function(init_ram_{rn}, @out: {self.cc.RAM_TYPE}:1, @in: 0:1)')
         self.cc.emit(f'    @plugin(ram_arith_v0, init, {self.size});')
         self.cc.emit()
 

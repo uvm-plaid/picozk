@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 #import galois
 import functools
+import picowizpl.util as util
 from typing import List
 
 # Current compiler
@@ -132,6 +133,14 @@ class Wire:
         assert isinstance(other, int)
         return exp_by_squaring(self, other)
 
+    def to_binary(self):
+        print('yep')
+        print(self)
+        bits = util.encode_int(self.val, self.field)
+        print(bits)
+        intv = util.decode_int(bits)
+        print(intv)
+
 @dataclass
 class WireBundle:
     wires: List[Wire]
@@ -158,6 +167,10 @@ class PicoWizPLCompiler(object):
         self.current_wire = 0
         self.field = field
         self.options = options
+
+        self.ARITH_TYPE = 0
+        self.BINARY_TYPE = 1
+        self.RAM_TYPE = 2
 
     def emit(self, s=''):
         self.relation_file.write(s)
@@ -215,6 +228,7 @@ class PicoWizPLCompiler(object):
             self.emit(f'@plugin ram_arith_v0;')
 
         self.emit(f'@type field {self.field};')
+        self.emit(f'@type field 2;')
 
         if 'ram' in self.options:
             s = '@type @plugin(ram_arith_v0, ram, 0, {0}, {1}, {2});'
@@ -228,10 +242,9 @@ class PicoWizPLCompiler(object):
         self.emit('    @plugin(mux_v0, permissive);')
 
         if 'ram' in self.options:
-            ram_type = 1
-            self.emit(f'  @function(read_ram, @out: 0:1, @in: {ram_type}:1, 0:1)')
+            self.emit(f'  @function(read_ram, @out: 0:1, @in: {self.RAM_TYPE}:1, 0:1)')
             self.emit('    @plugin(ram_arith_v0, read);')
-            self.emit(f'  @function(write_ram, @in: {ram_type}:1, 0:1, 0:1)')
+            self.emit(f'  @function(write_ram, @in: {self.RAM_TYPE}:1, 0:1, 0:1)')
             self.emit('    @plugin(ram_arith_v0, write);')
             self.emit()
 
@@ -240,6 +253,14 @@ class PicoWizPLCompiler(object):
         self.witness_file.write(f'@type field {self.field};\n')
         self.witness_file.write('@begin\n')
 
+        binary_wit_file = open(self.file_prefix + '.type1.wit', 'w')
+        binary_wit_file.write('version 2.0.0-beta;\n')
+        binary_wit_file.write('private_input;\n')
+        binary_wit_file.write(f'@type field 2;\n')
+        binary_wit_file.write('@begin\n')
+        binary_wit_file.write('@end\n')
+        binary_wit_file.close()
+
         ins_file = open(self.file_prefix + '.type0.ins', 'w')
         ins_file.write('version 2.0.0-beta;\n')
         ins_file.write('public_input;\n')
@@ -247,6 +268,14 @@ class PicoWizPLCompiler(object):
         ins_file.write('@begin\n')
         ins_file.write('@end\n')
         ins_file.close()
+
+        binary_ins_file = open(self.file_prefix + '.type1.ins', 'w')
+        binary_ins_file.write('version 2.0.0-beta;\n')
+        binary_ins_file.write('public_input;\n')
+        binary_ins_file.write(f'@type field 2;\n')
+        binary_ins_file.write('@begin\n')
+        binary_ins_file.write('@end\n')
+        binary_ins_file.close()
 
 
     def __exit__(self, exception_type, exception_value, traceback):
