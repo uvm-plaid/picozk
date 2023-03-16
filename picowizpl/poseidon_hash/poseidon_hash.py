@@ -62,13 +62,21 @@ class PoseidonHash:
 
             self.state = np.dot(self.state, self.mds_matrix)
 
-    def hash(self, input_vec):
+    def hash_block(self, input_block):
+        assert len(input_block) == self.t
         self.rc_counter = 0
-        padded_input = input_vec + [0 for _ in range(self.t-len(input_vec))]
-        self.state = [padded_input[i] + self.state[i] for i in range(self.t)]
+
+        self.state = [input_block[i] + self.state[i] for i in range(self.t)]
 
         self.full_rounds()
         self.partial_rounds()
         self.full_rounds()
+
+    def hash(self, input_vec):
+        padded = input_vec + [0 for _ in range(self.t- (len(input_vec) % self.t))]
+        blocks = [padded[i * self.t:(i + 1) * self.t]
+                  for i in range((len(padded) + self.t - 1) // self.t )]
+        for b in blocks:
+            self.hash_block(b)
 
         return self.state[1]
