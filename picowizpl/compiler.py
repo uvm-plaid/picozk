@@ -15,10 +15,10 @@ def SecretInt(x):
     return config.cc.add_to_witness(x % config.cc.field)
 
 def reveal(x):
-    config.cc.emit_gate('assert_zero', (x - val_of(x)).wire, effect=True, type=x.field)
+    config.cc.emit_gate('assert_zero', (x - val_of(x)).wire, effect=True, field=x.field)
 
 def assert0(x):
-    config.cc.emit_gate('assert_zero', x.wire, effect=True, type=x.field)
+    config.cc.emit_gate('assert_zero', x.wire, effect=True, field=x.field)
 
 def mux(a, b, c):
     if isinstance(a, int):
@@ -72,8 +72,8 @@ class PicoWizPLCompiler(object):
         else:
             raise Exception('no known type for field:', field)
 
-    def emit_gate(self, gate, *args, effect=False, type=None):
-        type_arg = self.type_of(type)
+    def emit_gate(self, gate, *args, effect=False, field=None):
+        type_arg = self.type_of(field)
         args_str = ', '.join([str(a) for a in args])
         if effect:
             self.emit(f'  @{gate}({type_arg}: {args_str});')
@@ -83,10 +83,10 @@ class PicoWizPLCompiler(object):
             self.emit(f'  {r} <- @{gate}({type_arg}: {args_str});')
             return r
 
-    def allocate(self, n):
+    def allocate(self, n, field=None):
         i = self.current_wire
         self.current_wire += n
-        self.emit_gate('new', f'${i} ... ${i + n-1}', effect=True)
+        self.emit_gate('new', f'${i} ... ${i + n-1}', effect=True, field=field)
         return [f'${i}' for i in range(i, i+n)]
 
     def add_to_witness(self, x):

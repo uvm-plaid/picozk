@@ -8,16 +8,19 @@ from . import util
 class BinaryInt:
     wires: List[any] # should be Wire, but causes a circular import
 
-    def __eq__(self, other):
-        other_wires = other.wires if isinstance(other, BinaryInt) else util.encode_int(other, 2**len(self.wires))
+    def _wires_of(self, v):
+        if isinstance(v, BinaryInt):
+            return v.wires
+        elif isinstance(v, int):
+            return util.encode_int(v, 2**len(self.wires))
+        else:
+            raise Exception('no wires for value:', v)
 
+    def __eq__(self, other):
         ok = 1
-        for w1, w2 in zip(self.wires, other_wires):
+        for w1, w2 in zip(self.wires, self._wires_of(other)):
             ok = ok * ((w1 * w2) + ((w1 + 1) * (w2 + 1)))
         return ok
 
-
-    def __le__(self, other):
-        print(self, other)
-        1/0
-
+    def is_negative(self):
+        return self.wires[-1]
