@@ -90,7 +90,7 @@ def picowizpl_function(*args, **kwargs):
                 conc_output = conc_fn(output_wire, output)
             else:
                 output_wires = [cc.next_wire() for _ in range(ow)]
-                cc.emit(f'  {wires[0]} ... {wires[-1]} <- @call({name}, {new_args});')
+                cc.emit(f'  {output_wires[0]} ... {output_wires[-1]} <- @call({name}, {new_args});')
                 conc_output = conc_fn(output_wires, output)
 
             return conc_output
