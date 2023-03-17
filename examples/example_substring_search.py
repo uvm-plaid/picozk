@@ -1,5 +1,6 @@
 import sys
 from picowizpl import *
+from picowizpl.functions import picowizpl_function
 
 if len(sys.argv) == 2:
     filename = sys.argv[1]
@@ -37,10 +38,33 @@ def dfa_from_string(text):
 with open(filename, 'r') as f:
     file_data = f.read()
 
+def abs_fn(x: Wire) -> (str, int):
+    return wire_of(x), val_of(x)
+
+def conc_fn(wire: str, val: int) -> Wire:
+    p = 2**61-1
+    return ArithmeticWire(wire, val%p, p)
+
+def conc_in(wires, args):
+    w_in1, w_in2 = wires
+    in1, in2 = args
+    return (conc_fn(w_in1, in1), conc_fn(w_in2, in2))
+
+def abs_in(args):
+    in1, in2 = args
+
+    wire1, val1 = abs_fn(in1)
+    wire2, val2 = abs_fn(in2)
+
+    return [wire1, wire2], (val1, val2)
+
 with PicoWizPLCompiler('miniwizpl_test'):
     file_string = [SecretInt(ord(c)) for c in file_data]
     dfa = dfa_from_string('import')
 
+    @picowizpl_function(abs_fns  = [abs_in,  abs_fn],
+                        conc_fns = [conc_in, conc_fn],
+                        in_wires = [1, 1], out_wires=1)
     def next_state(char, state):
         output = 0
 

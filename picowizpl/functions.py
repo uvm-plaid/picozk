@@ -32,7 +32,10 @@ def picowizpl_function(*args, **kwargs):
                 cw = ow
                 in_wire_names = []
                 for nw in iw:
-                    in_wire_names.append([f'${w}' for w in range(cw, cw+nw)])
+                    if nw == 1:
+                        in_wire_names.append(f'${cw}')
+                    else:
+                        in_wire_names.append([f'${w}' for w in range(cw, cw+nw)])
                     cw = cw + nw
 
                 # set up the compiler
@@ -48,9 +51,12 @@ def picowizpl_function(*args, **kwargs):
                 output = func(*new_args)
                 output_wires, _ = abs_fn(output)
 
-                output_wire_names = [f'${w}' for w in range(0, ow)]
-                for output_wire_name, wire in zip(output_wire_names, output_wires):
-                    cc.emit(f'  {output_wire_name} <- {wire};')
+                if ow == 1:
+                    cc.emit(f'  $0 <- {output_wires};')
+                else:
+                    output_wire_names = [f'${w}' for w in range(0, ow)]
+                    for output_wire_name, wire in zip(output_wire_names, output_wires):
+                        cc.emit(f'  {output_wire_name} <- {wire};')
 
                 # done compiling
                 cc.emit(f'  @end')
@@ -66,17 +72,27 @@ def picowizpl_function(*args, **kwargs):
 
             input_args = []
             for wnum, wires in zip(iw, in_wires):
-                wire_names = [cc.next_wire() for _ in range(wnum)]
-                wire_range = f'{wire_names[0]} ... {wire_names[-1]}'
-                cc.emit(f'  @new({wire_range});')
-                for wnew, wold in zip(wire_names, wires):
-                    cc.emit(f'  {wnew} <- {wold};')
-                input_args.append(wire_range)
+                if wnum == 1:
+                    input_args.append(wires)
+                else:
+                    wire_names = [cc.next_wire() for _ in range(wnum)]
+                    wire_range = f'{wire_names[0]} ... {wire_names[-1]}'
+                    cc.emit(f'  @new({wire_range});')
+                    for wnew, wold in zip(wire_names, wires):
+                        cc.emit(f'  {wnew} <- {wold};')
+                    input_args.append(wire_range)
 
-            wires = [cc.next_wire() for _ in range(ow)]
-            conc_output = conc_fn(wires, output)
             new_args = ', '.join(input_args)
-            cc.emit(f'  {wires[0]} ... {wires[-1]} <- @call({name}, {new_args});')
+
+            if ow == 1:
+                output_wire = cc.next_wire()
+                cc.emit(f'  {output_wire} <- @call({name}, {new_args});')
+                conc_output = conc_fn(output_wire, output)
+            else:
+                output_wires = [cc.next_wire() for _ in range(ow)]
+                cc.emit(f'  {wires[0]} ... {wires[-1]} <- @call({name}, {new_args});')
+                conc_output = conc_fn(output_wires, output)
+
             return conc_output
 
         return wrapped
