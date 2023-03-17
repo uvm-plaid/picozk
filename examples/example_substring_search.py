@@ -83,4 +83,5 @@ with PicoWizPLCompiler('miniwizpl_test'):
     print('dfa:', dfa)
     print('target string:', [ord(c) for c in "import"])
     print('final state:', state)
-    assert0(~(state == val_of(state)))
+    reveal(state)
+

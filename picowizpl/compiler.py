@@ -24,7 +24,7 @@ def mux(a, b, c):
     if isinstance(a, int):
         return b if a else c
     elif isinstance(a, BooleanWire):
-        return a * b + (~a) * c
+        return a.to_arith() * b + (~a).to_arith() * c
     else:
         raise Exception('unknown type for mux:', a)
 

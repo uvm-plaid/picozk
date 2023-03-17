@@ -35,6 +35,7 @@ class Wire:
         else:
             if isinstance(other, Wire):
                 assert other.field == self.field
+                assert type(self) == type(other), f'incompatible types: {type(self)}, {type(other)}'
                 r = config.cc.emit_gate('add', self.wire, other.wire,
                                         field=self.field)
             elif isinstance(other, int):
@@ -52,6 +53,7 @@ class Wire:
         else:
             if isinstance(other, Wire):
                 assert other.field == self.field
+                assert type(self) == type(other), f'incompatible types: {type(self)}, {type(other)}'
                 r = config.cc.emit_gate('mul', self.wire, other.wire,
                                         field=self.field)
             elif isinstance(other, int):
@@ -81,6 +83,9 @@ class BooleanWire(Wire):
 
     def __invert__(self):
         return (self * (self.field - 1)) + 1
+
+    def to_arith(self):
+        return ArithmeticWire(self.wire, self.val, self.field)
 
 
 class ArithmeticWire(Wire):

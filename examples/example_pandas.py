@@ -30,9 +30,9 @@ with PicoWizPLCompiler('miniwizpl_test', field=p):
     reveal(digest)
 
     # Filter in the rows that have the correct PUMA and OWN_RENT values
-    homeowner_rows = sdf.apply(lambda row: (row['PUMA'] == 1) & (row['OWN_RENT'] == 1),
+    homeowner_rows = sdf.apply(lambda row: ((row['PUMA'] == 1) & (row['OWN_RENT'] == 1)).to_arith(),
                                axis=1)
-    renter_rows = sdf.apply(lambda row: (row['PUMA'] == 1) & (row['OWN_RENT'] == 2),
+    renter_rows = sdf.apply(lambda row: ((row['PUMA'] == 1) & (row['OWN_RENT'] == 2)).to_arith(),
                             axis=1)
     # Sum the filtered rows to get the total population
     total_homeowners = homeowner_rows.sum()
