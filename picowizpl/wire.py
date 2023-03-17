@@ -102,6 +102,9 @@ class ArithmeticWire(Wire):
     def __lt__(self, other):
         return (self - other).is_negative()
 
+    def __gt__(self, other):
+        return (other - self).is_negative()
+
     def __le__(self, other):
         result = val_of(self) <= val_of(other)
         return config.cc.add_to_witness(int(result))
