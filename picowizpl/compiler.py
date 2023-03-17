@@ -15,7 +15,7 @@ def SecretInt(x):
     return config.cc.add_to_witness(x % config.cc.field)
 
 def reveal(x):
-    config.cc.emit_gate('assert_zero', (x - val_of(x)).wire, effect=True, field=x.field)
+    config.cc.emit_gate('assert_zero', (x + (-val_of(x))).wire, effect=True, field=x.field)
 
 def assert0(x):
     config.cc.emit_gate('assert_zero', x.wire, effect=True, field=x.field)
@@ -23,8 +23,11 @@ def assert0(x):
 def mux(a, b, c):
     if isinstance(a, int):
         return b if a else c
-    else:
+    elif isinstance(a, BooleanWire):
         return a * b + (~a) * c
+    else:
+        raise Exception('unknown type for mux:', a)
+
 
 
 @dataclass

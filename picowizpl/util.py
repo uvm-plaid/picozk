@@ -5,12 +5,12 @@ def gensym(x):
     return f'{x}_{gensym_num}'
 
 def decode_int(bits):
-    return int("".join(str(x) for x in reversed(bits)), 2)
+    return int("".join(str(x) for x in bits), 2)
 
 def encode_int(i, field):
     bitwidth = get_bits_for_field(field)
     bit_format = f'{{0:0{bitwidth}b}}'
-    return [int(b) for b in reversed(bit_format.format(i))]
+    return [int(b) for b in bit_format.format(i)]
 
 def get_bits_for_field(field):
     n = 1

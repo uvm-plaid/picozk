@@ -70,10 +70,7 @@ class Wire:
     def __int__(self):
         raise Exception('unsupported')
 
-class ArithmeticWire(Wire):
-    def __neg__(self):
-        return self * (self.field - 1)
-
+class BooleanWire(Wire):
     def __and__(self, other):
         return self * other
     __rand__ = __and__
@@ -83,8 +80,12 @@ class ArithmeticWire(Wire):
     __ror__ = __or__
 
     def __invert__(self):
-        return (-self) + 1
+        return (self * (self.field - 1)) + 1
 
+
+class ArithmeticWire(Wire):
+    def __neg__(self):
+        return self * (self.field - 1)
 
     def __sub__(self, other):
         return self + (-other)
@@ -93,11 +94,11 @@ class ArithmeticWire(Wire):
     def __eq__(self, other):
         diff = self - other
         r = config.cc.emit_call('mux', wire_of(diff), wire_of(1), wire_of(0))
-        return ArithmeticWire(r, int(val_of(self) == val_of(other)), self.field)
+        return BooleanWire(r, int(val_of(self) == val_of(other)), self.field)
     __req__ = __eq__
 
     def is_negative(self):
-        return self.to_binary().is_negative().to_arith()
+        return self.to_binary().is_negative().to_bool()
 
     def __lt__(self, other):
         return (self - other).is_negative()
@@ -135,7 +136,7 @@ class ArithmeticWire(Wire):
         return BinaryInt(wires)
 
 class BinaryWire(Wire):
-    def to_arith(self):
+    def to_bool(self):
         assert self.field == 2
         field = config.cc.field
         num_bits = util.get_bits_for_field(field)
@@ -150,7 +151,5 @@ class BinaryWire(Wire):
 
         config.cc.emit(f'  {config.cc.ARITH_TYPE}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
 
-        return ArithmeticWire(r, self.val, field)
+        return BooleanWire(r, self.val, field)
 
-        # result = val_of(self) < val_of(other)
-        # return config.cc.add_to_witness(int(result))

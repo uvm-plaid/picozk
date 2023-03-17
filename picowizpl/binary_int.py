@@ -23,4 +23,4 @@ class BinaryInt:
         return ok
 
     def is_negative(self):
-        return self.wires[-1]
+        return self.wires[0]
