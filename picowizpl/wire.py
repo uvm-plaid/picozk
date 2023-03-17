@@ -109,7 +109,7 @@ class ArithmeticWire(Wire):
         result = val_of(self) <= val_of(other)
         return config.cc.add_to_witness(int(result))
 
-    def __pow__(self, other):
+    def __pow__(self, other, p=None):
         def exp_by_squaring(x, n):
             assert n > 0
             if n%2 == 0:
@@ -121,6 +121,8 @@ class ArithmeticWire(Wire):
                 return x * exp_by_squaring(x * x, (n - 1) // 2)
 
         assert isinstance(other, int)
+        if p != None:
+            assert p == self.field
         return exp_by_squaring(self, other)
 
     def to_binary(self):

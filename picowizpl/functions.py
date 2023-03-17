@@ -1,7 +1,8 @@
 from functools import wraps
 import picowizpl
-from picowizpl import Wire, WireBundle
-import util
+from . import util
+from . import config
+from .wire import *
 
 def picowizpl_function(*args, **kwargs):
     if len(args) == 1 and len(kwargs) == 0 and callable(args[0]):
@@ -12,49 +13,71 @@ def picowizpl_function(*args, **kwargs):
         name = util.gensym('func')
         iw = kwargs['in_wires']
         ow = kwargs['out_wires']
-        abs_op = kwargs['op']
-        absfn = kwargs['absfn']
-        concfn = kwargs['concfn']
+
+        abs_in, abs_fn   = kwargs['abs_fns']
+        conc_in, conc_fn = kwargs['conc_fns']
 
         @wraps(func)
         def wrapped(*args):
             nonlocal needs_compilation
-            cc = picowizpl.cc
+            cc = config.cc
 
             if needs_compilation:
                 needs_compilation = False
-                cc.emit(f'  @function({name}, @out: 0:{ow}, @in: 0:{iw}, 0:{iw})')
+                in_str = ', '.join([f'0: {w}' for w in iw])
+                cc.emit(f'  @function({name}, @out: 0:{ow}, @in: {in_str})')
+
                 # generate the arguments
                 new_args = []
-                for i, a in enumerate(args):
-                    wire_names = [f'${w}' for w in range(ow + i*iw, ow + (i+1)*iw)]
-                    wire_bundle = concfn(a)
-                    new_wires = [Wire(name, w.val) for name, w in zip(wire_names, wire_bundle.wires)]
-                    new_args.append(WireBundle(new_wires))
-                    #new_args.append(absfn(WireBundle(new_wires)))
+                cw = ow
+                in_wire_names = []
+                for nw in iw:
+                    in_wire_names.append([f'${w}' for w in range(cw, cw+nw)])
+                    cw = cw + nw
 
                 # set up the compiler
                 old_current_wire = cc.current_wire
-                cc.current_wire = ow + 2*iw
+                cc.current_wire = cw
+                cc.constant_wire.cache_clear()
+
+                # generate the input
+                _, in_vals = abs_in(args)
+                new_args = conc_in(in_wire_names, in_vals)
+
                 # compile the function
                 output = func(*new_args)
+                output_wires, _ = abs_fn(output)
+
                 output_wire_names = [f'${w}' for w in range(0, ow)]
-                for output_wire_name, wire in zip(output_wire_names, output.wires):
-                    cc.emit(f'  {output_wire_name} <- {wire.wire};')
+                for output_wire_name, wire in zip(output_wire_names, output_wires):
+                    cc.emit(f'  {output_wire_name} <- {wire};')
 
                 # done compiling
                 cc.emit(f'  @end')
 
                 # reset the compiler
+                cc.constant_wire.cache_clear()
                 cc.current_wire = old_current_wire
 
 
             # construct the function call
+            in_wires, abs_input = abs_in(args)
+            output = func(*abs_input)
+
+            input_args = []
+            for wnum, wires in zip(iw, in_wires):
+                wire_names = [cc.next_wire() for _ in range(wnum)]
+                wire_range = f'{wire_names[0]} ... {wire_names[-1]}'
+                cc.emit(f'  @new({wire_range});')
+                for wnew, wold in zip(wire_names, wires):
+                    cc.emit(f'  {wnew} <- {wold};')
+                input_args.append(wire_range)
+
             wires = [cc.next_wire() for _ in range(ow)]
-            output = abs_op(wires, *args)
-            new_args = ', '.join([f'{i.wires[0]} ... {i.wires[-1]}' for i in args])
+            conc_output = conc_fn(wires, output)
+            new_args = ', '.join(input_args)
             cc.emit(f'  {wires[0]} ... {wires[-1]} <- @call({name}, {new_args});')
-            return output
+            return conc_output
 
         return wrapped
 

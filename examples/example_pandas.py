@@ -9,6 +9,7 @@ p = 2**61-1
 with PicoWizPLCompiler('miniwizpl_test', field=p):
     # https://media.githubusercontent.com/media/usnistgov/SDNist/main/nist%20diverse%20communities%20data%20excerpts/massachusetts/ma2019.csv
     df = pd.read_csv('ma2019.csv')
+    print('data length:', len(df))
 
     # Convert the PUMA code to an integer
     # PUMA 25-00703 is Essex County (East)
@@ -36,6 +37,8 @@ with PicoWizPLCompiler('miniwizpl_test', field=p):
     # Sum the filtered rows to get the total population
     total_homeowners = homeowner_rows.sum()
     total_renters = renter_rows.sum()
+    print(total_homeowners)
+    print(total_renters)
     reveal(total_homeowners)
     reveal(total_renters)
 
