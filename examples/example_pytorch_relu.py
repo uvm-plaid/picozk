@@ -28,6 +28,15 @@ class ZKLinear(torch.nn.Linear):
         else:
             return super().forward(inp)
 
+class ZKReLU(torch.nn.ReLU):
+    def forward(self, inp):
+        if zk:
+            is_pos = np.vectorize(lambda x: (~x.is_negative()).to_arith(),
+                                  otypes=[ArithmeticWire])
+            return is_pos(inp) * inp
+        else:
+            return super().forward(inp)
+
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -35,20 +44,22 @@ class Net(nn.Module):
         self.fc1.bias_scale = SCALE
         self.fc2 = ZKLinear(32, 10)
         self.fc2.bias_scale = SCALE**2
+        self.relu = ZKReLU()
 
     def forward(self, x):
         x = self.fc1(x)
+        x = self.relu(x)
         x = self.fc2(x)
         return x
-
 
 with PicoWizPLCompiler('miniwizpl_test'):
     model = Net()
     model.eval()
 
-    test_input = torch.randn(10, 784)
+    test_input = torch.randn(100, 784)
     encoded_input = encode_matrix(test_input.detach().numpy())
-    #output1 = model(test_input)
+    output1 = model(test_input)
+    #print(output1)
     zk=True
     output = model(encoded_input)
 
