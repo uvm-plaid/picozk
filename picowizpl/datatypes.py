@@ -36,5 +36,8 @@ class SecretIndexList:
     def __setitem__(self, idx, val):
         self.ram.write(idx, val)
 
+    def __len__(self):
+        return len(self.ram)
+
     def __str__(self):
         return f'SecretIndexList({self.ram.val})'

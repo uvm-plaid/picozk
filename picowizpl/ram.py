@@ -24,3 +24,6 @@ class RAM:
         r = self.cc.next_wire()
         self.cc.emit(f'  {r} <- @call(read_ram, {self.wire}, {wire_of(idx)});')
         return ArithmeticWire(r, self.val[val_of(idx)], self.cc.field)
+
+    def __len__(self):
+        return self.size
