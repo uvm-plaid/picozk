@@ -12,7 +12,7 @@ from . import config
 
 def SecretInt(x):
     assert x % config.cc.field == x
-    return config.cc.add_to_witness(x % config.cc.field)
+    return config.cc.add_to_witness(int(x) % config.cc.field)
 
 def reveal(x):
     config.cc.emit_gate('assert_zero', (x + (-val_of(x))).wire, effect=True, field=x.field)
