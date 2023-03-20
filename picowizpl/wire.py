@@ -23,7 +23,7 @@ def wire_of(e):
         raise Exception('no wire for value', e, 'of type', type(e))
 
 
-@dataclass
+@dataclass(frozen=True)
 class Wire:
     wire: str
     val: int
@@ -72,6 +72,7 @@ class Wire:
     def __int__(self):
         raise Exception('unsupported')
 
+@dataclass(frozen=True)
 class BooleanWire(Wire):
     def __and__(self, other):
         return self * other
@@ -88,6 +89,7 @@ class BooleanWire(Wire):
         return ArithmeticWire(self.wire, self.val, self.field)
 
 
+@dataclass(frozen=True)
 class ArithmeticWire(Wire):
     def __neg__(self):
         return self * (self.field - 1)
@@ -140,6 +142,7 @@ class ArithmeticWire(Wire):
         wires = [BinaryWire(name, val, 2) for name, val in zip(wire_names, bits)]
         return BinaryInt(wires)
 
+@dataclass(frozen=True)
 class BinaryWire(Wire):
     def to_bool(self):
         assert self.field == 2

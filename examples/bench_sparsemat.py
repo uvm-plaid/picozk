@@ -5,24 +5,24 @@ from scipy.sparse import csr_matrix
 N = 20
 K = 5
 
-with PicoWizPLCompiler('miniwizpl_test'):
-    arr = np.random.randint(0, 2, size=(N, N))
-    csr_mat = csr_matrix(arr)
-    csr_mat.data = [SecretInt(x) for x in csr_mat.data]
-    vec = np.random.randint(0, 5, size=N)
-    output = [0 for _ in range(N)]
+with PicoWizPLCompiler('miniwizpl_test', options=['ram']):
+    arr = np.zeros((N, N))
+    sparse_arr = {}
+    all_is = np.random.choice(range(0, N), size=K)
+    all_js = np.random.choice(range(0, N), size=K)
+    for i, j in zip(all_is, all_js):
+        v = np.random.randint(0, 100)
+        arr[i, j] = v
+        sparse_arr[(SecretInt(i), SecretInt(j))] = SecretInt(v)
 
-    #print(csr_mat)
-    for row in range(N):
-        lower = csr_mat.indptr[row]
-        upper = csr_mat.indptr[row+1]
-        for data_idx in range(3000):
-            if lower <= data_idx and data_idx < upper:
-                mat_val = csr_mat.data[data_idx]
-                col_idx = csr_mat.indices[data_idx]
-                vec_val = vec[col_idx]
-                print(mat_val)
-                print(vec_val)
-                output[row] += mat_val * int(vec_val)
-    print(output)
-    print(arr @ vec)
+    print(sparse_arr)
+
+    vec = np.random.randint(0, 5, size=N)
+    secret_vec = SecretIndexList(list(vec))
+    output = SecretIndexList([0 for _ in range(N)])
+
+    for (i, j), v in sparse_arr.items():
+        output[i] = output[i] + secret_vec[j] * v
+
+    # print(output)
+    # print(arr @ vec == output)
