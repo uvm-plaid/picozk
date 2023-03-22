@@ -30,3 +30,15 @@ with PicoWizPLCompiler('miniwizpl_test', field=97):
     eq6 = y < y
     print('y < y?', eq6)
     reveal(eq6)
+
+    eq7 = x > y
+    print('x > y?', eq7)
+    reveal(eq7)
+
+    eq8 = y > x
+    print('y > x?', eq8)
+    reveal(eq8)
+
+    eq9 = y > y
+    print('y > y?', eq9)
+    reveal(eq9)
