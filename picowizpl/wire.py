@@ -85,8 +85,15 @@ class BooleanWire(Wire):
     def __invert__(self):
         return (self * (self.field - 1)) + 1
 
+    def __rsub__(self, other):
+        assert other == 1
+        return ~self
+
     def to_arith(self):
         return ArithmeticWire(self.wire, self.val, self.field)
+
+    def if_else(self, then_val, else_val):
+        return else_val + self.to_arith() * (then_val - else_val)
 
 
 @dataclass(frozen=True)
