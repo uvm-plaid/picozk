@@ -56,7 +56,7 @@ with PicoWizPLCompiler('miniwizpl_test'):
     model = Net()
     model.eval()
 
-    test_input = torch.randn(100, 784)
+    test_input = torch.randn(10, 784)
     encoded_input = encode_matrix(test_input.detach().numpy())
     output1 = model(test_input)
     #print(output1)
