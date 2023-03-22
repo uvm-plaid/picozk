@@ -96,7 +96,8 @@ class ArithmeticWire(Wire):
 
     def __sub__(self, other):
         return self + (-other)
-    __rsub__ = __sub__
+    def __rsub__(self, other):
+        return (-self) + other
 
     def __eq__(self, other):
         diff = self - other
