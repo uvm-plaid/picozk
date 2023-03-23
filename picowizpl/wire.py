@@ -122,8 +122,10 @@ class ArithmeticWire(Wire):
         return (other - self).is_negative()
 
     def __le__(self, other):
-        result = val_of(self) <= val_of(other)
-        return config.cc.add_to_witness(int(result))
+        return ~(self > other)
+
+    def __ge__(self, other):
+        return ~(self < other)
 
     def __pow__(self, other, p=None):
         def exp_by_squaring(x, n):
