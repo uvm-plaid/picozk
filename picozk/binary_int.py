@@ -22,5 +22,17 @@ class BinaryInt:
             ok = ok * ((w1 * w2) + ((w1 + 1) * (w2 + 1)))
         return ok
 
+    def __add__(self, other):
+        out_wires = []
+        carry = 0
+
+        for a, b in zip(self.wires, self._wires_of(other)):
+            ab = a + b
+            out_wires.append(ab + carry)
+            carry = (a * b) + (ab * carry)
+
+        return BinaryInt(out_wires)
+    __radd__ = __add__
+
     def is_negative(self):
         return self.wires[0]
