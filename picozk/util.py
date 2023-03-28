@@ -17,3 +17,22 @@ def get_bits_for_field(field):
     while 2**n < field:
         n += 1
     return n
+
+# OLD CODE that might be useful later
+
+# Monkey-patching Galois
+
+# def mk_defer(new_fn, old_fn):
+#     def defer_fn(x, y):
+#         if isinstance(x, Wire):
+#             return new_fn(x, y)
+#         elif isinstance(y, Wire):
+#             return new_fn(y, x)
+#         else:
+#             return old_fn(x, y)
+#     return defer_fn
+
+# galois.Array.__add__ = mk_defer(Wire.__add__, galois.Array.__add__)
+# galois.Array.__mul__ = mk_defer(Wire.__mul__, galois.Array.__mul__)
+# galois.Array.__radd__ = mk_defer(Wire.__radd__, galois.Array.__radd__)
+# galois.Array.__rmul__ = mk_defer(Wire.__rmul__, galois.Array.__rmul__)

@@ -1,6 +1,3 @@
-import numba
-numba.config.DISABLE_JIT = True
-
 from dataclasses import dataclass
 from typing import List
 import pandas as pd
@@ -34,21 +31,6 @@ def mux(a, b, c):
 class WireBundle:
     wires: List[Wire]
 
-
-# def mk_defer(new_fn, old_fn):
-#     def defer_fn(x, y):
-#         if isinstance(x, Wire):
-#             return new_fn(x, y)
-#         elif isinstance(y, Wire):
-#             return new_fn(y, x)
-#         else:
-#             return old_fn(x, y)
-#     return defer_fn
-
-# galois.Array.__add__ = mk_defer(Wire.__add__, galois.Array.__add__)
-# galois.Array.__mul__ = mk_defer(Wire.__mul__, galois.Array.__mul__)
-# galois.Array.__radd__ = mk_defer(Wire.__radd__, galois.Array.__radd__)
-# galois.Array.__rmul__ = mk_defer(Wire.__rmul__, galois.Array.__rmul__)
 
 class PicoZKCompiler(object):
     def __init__(self, file_prefix, field=2**61-1, options=[]):
