@@ -1,4 +1,4 @@
-from picowizpl import *
+from picozk import *
 from oblif.decorator import oblif
 
 @oblif
@@ -8,7 +8,7 @@ def test(x):
     else:
         return x + 5
 
-with PicoWizPLCompiler('miniwizpl_test'):
+with PicoZKCompiler('picozk_test'):
     x = SecretInt(5)
     r1 = test(x)
     reveal(r1)

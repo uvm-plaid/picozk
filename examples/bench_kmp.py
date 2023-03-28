@@ -1,4 +1,4 @@
-from picowizpl import *
+from picozk import *
 
 def kmp_zk(t, p):
     """return all matching positions of p in t"""
@@ -30,7 +30,7 @@ def kmp_zk(t, p):
         j = mux(c2, next[idx], j)
     return found
 
-with PicoWizPLCompiler('miniwizpl_test', options=['ram']):
+with PicoZKCompiler('picozk_test', options=['ram']):
     p = SecretIndexList([1, 2])
     t = SecretIndexList([0,1,3,2,3,1,2,3])
     r = kmp_zk(t, p)

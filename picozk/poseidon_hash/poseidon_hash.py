@@ -1,12 +1,12 @@
 import numpy as np
-from picowizpl import *
-import picowizpl.poseidon_hash.poseidon_round_numbers as rn
-import picowizpl.poseidon_hash.poseidon_round_constants as rc
+from picozk import *
+import picozk.poseidon_hash.poseidon_round_numbers as rn
+import picozk.poseidon_hash.poseidon_round_constants as rc
 import galois
 from math import log2, ceil
 
-from picowizpl import config
-from picowizpl.functions import picowizpl_function
+from picozk import config
+from picozk.functions import picozk_function
 
 def dot(v, m):
     return [sum([a + b for a, b in zip(v, r)]) for r in m]
@@ -97,9 +97,9 @@ class PoseidonHash:
             self.state = dot(self.state, self.mds_matrix)
 
 
-    @picowizpl_function(abs_fns  = [abs_in, abs_fn],
-                        conc_fns = [conc_in, conc_fn],
-                        in_wires = [3, 3], out_wires=3)
+    @picozk_function(abs_fns  = [abs_in, abs_fn],
+                     conc_fns = [conc_in, conc_fn],
+                     in_wires = [3, 3], out_wires=3)
     def hash_block(self, input_block, current_state):
         assert len(input_block) == self.t
         self.rc_counter = 0

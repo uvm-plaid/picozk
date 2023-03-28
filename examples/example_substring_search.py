@@ -1,6 +1,6 @@
 import sys
-from picowizpl import *
-from picowizpl.functions import picowizpl_function
+from picozk import *
+from picozk.functions import picozk_function
 
 if len(sys.argv) == 2:
     filename = sys.argv[1]
@@ -58,13 +58,13 @@ def abs_in(args):
 
     return [wire1, wire2], (val1, val2)
 
-with PicoWizPLCompiler('miniwizpl_test'):
+with PicoZKCompiler('picozk_test'):
     file_string = [SecretInt(ord(c)) for c in file_data]
     dfa = dfa_from_string('import')
 
-    @picowizpl_function(abs_fns  = [abs_in,  abs_fn],
-                        conc_fns = [conc_in, conc_fn],
-                        in_wires = [1, 1], out_wires=1)
+    @picozk_function(abs_fns  = [abs_in, abs_fn],
+                     conc_fns = [conc_in, conc_fn],
+                     in_wires = [1, 1], out_wires=1)
     def next_state(char, state):
         output = 0
 

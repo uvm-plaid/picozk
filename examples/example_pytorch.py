@@ -1,4 +1,4 @@
-from picowizpl import *
+from picozk import *
 from dataclasses import dataclass
 
 import torch
@@ -42,7 +42,7 @@ class Net(nn.Module):
         return x
 
 
-with PicoWizPLCompiler('miniwizpl_test'):
+with PicoZKCompiler('picozk_test'):
     model = Net()
     model.eval()
 

@@ -1,10 +1,10 @@
 from functools import wraps
-import picowizpl
+import picozk
 from . import util
 from . import config
 from .wire import *
 
-def picowizpl_function(*args, **kwargs):
+def picozk_function(*args, **kwargs):
     if len(args) == 1 and len(kwargs) == 0 and callable(args[0]):
         raise RuntimeError('Args required')
 

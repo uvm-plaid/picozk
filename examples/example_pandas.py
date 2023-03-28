@@ -1,12 +1,12 @@
 
-from picowizpl import *
-from picowizpl.poseidon_hash import PoseidonHash
+from picozk import *
+from picozk.poseidon_hash import PoseidonHash
 
 import pandas as pd
 
 p = 2**61-1
 
-with PicoWizPLCompiler('miniwizpl_test', field=p):
+with PicoZKCompiler('picozk_test', field=p):
     # https://media.githubusercontent.com/media/usnistgov/SDNist/main/nist%20diverse%20communities%20data%20excerpts/massachusetts/ma2019.csv
     df = pd.read_csv('ma2019.csv')
     print('data length:', len(df))

@@ -1,10 +1,10 @@
 from numba import jit, config
 config.DISABLE_JIT = True
 
-from picowizpl import *
+from picozk import *
 from typing import List
 import galois
-from functions import picowizpl_function
+from functions import picozk_function
 from typing import List
 
 gf_2 = galois.GF(2)
@@ -37,9 +37,9 @@ class BinaryInt:
     def to_int(self):
         return self.val
 
-    @picowizpl_function(in_wires=BITWIDTH, out_wires=BITWIDTH,
-                        concfn=lambda x: x.conc(), absfn=lambda x: BinaryInt.abs(x),
-                        op=abs_add)
+    @picozk_function(in_wires=BITWIDTH, out_wires=BITWIDTH,
+                     concfn=lambda x: x.conc(), absfn=lambda x: BinaryInt.abs(x),
+                     op=abs_add)
     def __add__(self, other):
         out_wires = []
         carry = 0
@@ -68,7 +68,7 @@ def check_equal(c, i):
     for w, b in zip(c.conc().wires, encode_int(i)):
         assert0(w + b)
 
-with PicoWizPLCompiler('miniwizpl_test', field=2):
+with PicoZKCompiler('picozk_test', field=2):
     v = binary_int(10)
     tot = v
     for i in range(2000):

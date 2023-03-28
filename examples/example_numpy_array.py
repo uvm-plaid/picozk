@@ -1,7 +1,7 @@
 import numpy as np
-from picowizpl import *
+from picozk import *
 
-with PicoWizPLCompiler('miniwizpl_test'):
+with PicoZKCompiler('picozk_test'):
     y = np.random.randint(1, 10, 10000)
     sy = np.array([SecretInt(x) for x in y])
     z = sy.sum()

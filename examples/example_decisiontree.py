@@ -1,4 +1,4 @@
-from picowizpl import *
+from picozk import *
 
 import numpy as np
 from sklearn import svm, datasets, neighbors, tree
@@ -111,7 +111,7 @@ def classify(x, t):
 
 results = [classify(x, t) for x in X]
 
-with PicoWizPLCompiler('miniwizpl_test', options=['ram']):
+with PicoZKCompiler('picozk_test', options=['ram']):
     st = encode_tree(t)
 
     # print(st)

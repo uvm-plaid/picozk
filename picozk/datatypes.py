@@ -1,4 +1,4 @@
-from picowizpl import *
+from picozk import *
 
 class SecretStack:
     def __init__(self, max_size):

@@ -1,4 +1,4 @@
-from picowizpl import *
+from picozk import *
 from dataclasses import dataclass
 
 import torch

@@ -1,6 +1,6 @@
-from picowizpl import *
+from picozk import *
 
-with PicoWizPLCompiler('miniwizpl_test', field=97):
+with PicoZKCompiler('picozk_test', field=97):
     x = SecretInt(5)
     y = SecretInt(6)
 

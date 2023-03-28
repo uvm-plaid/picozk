@@ -50,7 +50,7 @@ class WireBundle:
 # galois.Array.__radd__ = mk_defer(Wire.__radd__, galois.Array.__radd__)
 # galois.Array.__rmul__ = mk_defer(Wire.__rmul__, galois.Array.__rmul__)
 
-class PicoWizPLCompiler(object):
+class PicoZKCompiler(object):
     def __init__(self, file_prefix, field=2**61-1, options=[]):
         self.file_prefix = file_prefix
         self.current_wire = 0

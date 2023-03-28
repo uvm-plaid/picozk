@@ -1,4 +1,4 @@
-from picowizpl import *
+from picozk import *
 import numpy as np
 from scipy.sparse import csr_matrix
 from dataclasses import dataclass
@@ -18,7 +18,7 @@ def sparse_mult(sparse_mat: ZKSparseMatrix, vec: SecretIndexList) -> SecretIndex
 
     return output
 
-with PicoWizPLCompiler('miniwizpl_test', options=['ram']):
+with PicoZKCompiler('picozk_test', options=['ram']):
     arr = np.zeros((N, N))
     sparse_mat = {}
     all_is = np.random.choice(range(0, N), size=K)

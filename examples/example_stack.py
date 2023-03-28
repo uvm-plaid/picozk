@@ -1,6 +1,6 @@
-from picowizpl import *
+from picozk import *
 
-with PicoWizPLCompiler('miniwizpl_test', options=['ram']):
+with PicoZKCompiler('picozk_test', options=['ram']):
     x = SecretStack(5)
     for i in range(3):
         x.push(i)

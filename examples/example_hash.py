@@ -1,6 +1,6 @@
-from picowizpl import *
+from picozk import *
 
-with PicoWizPLCompiler('miniwizpl_test'):
+with PicoZKCompiler('picozk_test'):
     p = 2**31-1
     n = 100
     input_vec = [1,2,3,4]

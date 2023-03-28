@@ -1,6 +1,6 @@
-from picowizpl import *
+from picozk import *
 
-with PicoWizPLCompiler('miniwizpl_test'):
+with PicoZKCompiler('picozk_test'):
     a = SecretInt(5)
     b = SecretInt(6)
     assert0(~(a == a))
