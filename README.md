@@ -41,5 +41,6 @@ Running this program results in three files:
   information (known only to prover)
 
 These files can be used to generate a ZK proof using any backend
-compatible with the SIEVE intermediate representation (IR) - for
-example, the [EMP Toolkit](https://github.com/emp-toolkit/emp-ir).
+compatible with the [SIEVE intermediate representation
+(IR)](https://stealthsoftwareinc.github.io/wizkit-blog/2021/09/20/introducing-the-sieve-ir.html) -
+for example, the [EMP Toolkit](https://github.com/emp-toolkit/emp-ir).
