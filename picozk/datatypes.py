@@ -3,26 +3,21 @@ from picozk import *
 class SecretStack:
     def __init__(self, max_size):
         self.ram = RAM(max_size)
-        self.size = 0
-
-    def pop(self):
-        self.size = mux(self.size == 0, 0, self.size - 1)
-        return self.ram.read(self.size)
-
-    def push(self, v):
-        self.ram.write(self.size, v)
-        self.size = self.size + 1
+        self.top = 0
 
     def cond_pop(self, cond):
-        old_size = self.size
-        self.size = mux(cond, self.size - 1, self.size)
-        self.size = mux(old_size == 0, 0, self.size)
-        return mux(cond, self.ram.read(self.size), 0)
+        self.top = mux(cond & ~(self.top == 0), self.top - 1, self.top)
+        return mux(cond, self.ram.read(self.top), 0)
 
     def cond_push(self, cond, v):
-        self.size = mux(cond, self.size + 1, self.size)
-        old_val = self.ram.read(self.size)
-        self.ram.write(self.size, mux(cond, v, old_val))
+        self.top = mux(cond, self.top + 1, self.top)
+        self.ram.write(self.top, mux(cond, v, self.ram.read(self.top)))
+
+    def pop(self):
+        return self.cond_pop(1)
+
+    def push(self, v):
+        self.cond_push(1, v)
 
 class SecretIndexList:
     def __init__(self, xs):
