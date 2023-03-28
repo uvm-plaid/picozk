@@ -1,8 +1,8 @@
 from picozk import *
 
-class SecretStack:
+class ZKStack:
     def __init__(self, max_size):
-        self.ram = RAM(max_size)
+        self.ram = ZKRAM(max_size)
         self.top = 0
 
     def cond_pop(self, cond):
@@ -13,15 +13,18 @@ class SecretStack:
         self.top = mux(cond, self.top + 1, self.top)
         self.ram.write(self.top, mux(cond, v, self.ram.read(self.top)))
 
+    def empty(self):
+        return self.top == 0
+
     def pop(self):
         return self.cond_pop(1)
 
     def push(self, v):
         self.cond_push(1, v)
 
-class SecretIndexList:
+class ZKList:
     def __init__(self, xs):
-        self.ram = RAM(len(xs))
+        self.ram = ZKRAM(len(xs))
         for i, x in enumerate(xs):
             self.ram.write(i, SecretInt(x))
 

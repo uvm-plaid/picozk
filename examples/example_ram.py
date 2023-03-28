@@ -1,7 +1,7 @@
 from picozk import *
 
 with PicoZKCompiler('picozk_test', options=['ram']):
-    x = SecretIndexList([1,2,3,4,5])
+    x = ZKList([1, 2, 3, 4, 5])
     y = x[3]
     x[3] = 0
     assert0(y - val_of(y))

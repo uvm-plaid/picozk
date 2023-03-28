@@ -1,7 +1,7 @@
 from .wire import *
 from . import compiler
 
-class RAM:
+class ZKRAM:
     def __init__(self, size):
         self.cc = compiler.cc
         self.size = size

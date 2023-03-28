@@ -59,7 +59,7 @@ def export_tree(tree, node, depth):
 @dataclass
 class SecretTree:
     ptr: int
-    ram: RAM
+    ram: ZKRAM
 
     def get_branch(self, cond):
         left_ptr = self.ram.read(self.ptr+2)
@@ -72,7 +72,7 @@ class SecretTree:
 
 def encode_tree(t: Tree):
     ram_size = t.size()
-    ram = RAM(ram_size)
+    ram = ZKRAM(ram_size)
     free_ptr = 0
 
     def encode(t: Tree):
@@ -129,7 +129,7 @@ with PicoZKCompiler('picozk_test', options=['ram']):
             return classify_st(x, next_st, d-1)
 
     for i, x_i in enumerate(X):
-        xx = SecretIndexList([int(x*SCALE) for x in x_i])
+        xx = ZKList([int(x * SCALE) for x in x_i])
         result = classify_st(xx, st, 8)
 
         reveal(result)
