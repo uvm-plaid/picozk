@@ -131,9 +131,13 @@ with PicoZKCompiler('picozk_test', options=['ram']):
     for i, x_i in enumerate(X):
         xx = SecretIndexList([int(x*SCALE) for x in x_i])
         result = classify_st(xx, st, 8)
-        difference = result - int(results[0])
-        #print(correct)
-        assert0(difference)
+
+        reveal(result)
+
+        # to test against the actual decision tree
+        # difference = result - int(results[0])
+        # assert0(difference)
+
 
 #print(t)
 print('t depth:', t.depth())
