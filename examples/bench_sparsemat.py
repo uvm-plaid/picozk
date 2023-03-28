@@ -8,8 +8,9 @@ from typing import Dict, Tuple
 N = 20
 K = 5
 
-def sparse_mult(sparse_mat: Dict[Tuple[ArithmeticWire, ArithmeticWire], ArithmeticWire],
-                vec: SecretIndexList) -> SecretIndexList:
+ZKSparseMatrix = Dict[Tuple[ArithmeticWire, ArithmeticWire], ArithmeticWire]
+
+def sparse_mult(sparse_mat: ZKSparseMatrix, vec: SecretIndexList) -> SecretIndexList:
     output = SecretIndexList([0 for _ in range(len(vec))])
 
     for (i, j), v in sparse_mat.items():
