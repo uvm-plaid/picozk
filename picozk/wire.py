@@ -171,3 +171,5 @@ class BinaryWire(Wire):
 
         return BooleanWire(r, self.val, field)
 
+    __xor__ = Wire.__add__
+    __and__ = Wire.__mul__

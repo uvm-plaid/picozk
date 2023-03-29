@@ -34,5 +34,21 @@ class BinaryInt:
         return BinaryInt(out_wires)
     __radd__ = __add__
 
+    def __rshift__(self, n):
+        bw = len(self.wires)
+        return BinaryInt(self.wires[bw-n:] + self.wires[:bw-n])
+
+    def __lshift__(self, n):
+        bw = len(self.wires)
+        return BinaryInt(self.wires[:bw-n] + self.wires[bw-n:])
+
+    def __xor__(self, other):
+        out_wires = [a ^ b for a, b in zip(self.wires, self._wires_of(other))]
+        return BinaryInt(out_wires)
+
+    def __and__(self, other):
+        out_wires = [a & b for a, b in zip(self.wires, self._wires_of(other))]
+        return BinaryInt(out_wires)
+
     def is_negative(self):
         return self.wires[0]
