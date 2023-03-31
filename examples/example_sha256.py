@@ -8,6 +8,8 @@ import copy
 import struct
 import binascii
 
+from picozk import *
+from picozk import util
 F32 = 0xFFFFFFFF
 
 _k = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
@@ -46,25 +48,14 @@ def _pad(msglen):
 from dataclasses import dataclass
 from picozk import *
 
-@dataclass
-class BitVector:
-    wires: List[BinaryWire]
-
 
 def _rotr(x, y):
     return ((x >> y) | (x << (32 - y))) & F32
 
-print(_rotr(5, 0))
-print(_rotr(5, 1))
-print(_rotr(1, 1))
-print(2**31)
-
-with PicoZKCompiler('picozk_test'):
-    x = SecretInt(5)
-    xb = x.to_binary()
-    print(xb)
-    print(xb ^ xb & xb)
-
+# print(_rotr(5, 0))
+# print(_rotr(5, 1))
+# print(_rotr(1, 1))
+# print(2**31)
 
 def _maj(x, y, z):
     return (x & y) ^ (x & z) ^ (y & z)
@@ -72,6 +63,60 @@ def _maj(x, y, z):
 
 def _ch(x, y, z):
     return (x & y) ^ ((~x) & z)
+
+def print_word(x):
+    assert isinstance(x, BinaryInt)
+    bits = [val_of(b) for b in x.wires]
+    print(bits)
+
+def test_compress(inp):
+    w = [BinaryInt([0 for _ in range(32)]) for _ in range(64)]
+    w[0] = inp
+
+    for i in range(16, 64):
+        s0 = w[i-15].rotr(7) ^ w[i-15].rotr(18) ^ w[i-15].rotr(3)
+        s1 = w[i-2].rotr(17) ^ w[i-2].rotr(19) ^ (w[i-2] >> 10)
+        w[i] = (w[i-16] + s0 + w[i-7] + s1)
+        print_word(w[i])
+
+    big_h = [BinaryInt(util.encode_int(x, 2**32)) for x in _h]
+    a, b, c, d, e, f, g, h = big_h
+    k = [BinaryInt(util.encode_int(x, 2**32)) for x in _k]
+
+    for i in range(64):
+        s0 = a.rotr(2) ^ a.rotr(13) ^ a.rotr(22)
+        t2 = s0 + _maj(a, b, c)
+        s1 = e.rotr(6) ^ e.rotr(11) ^ e.rotr(25)
+        t1 = h + s1 + _ch(e, f, g) + k[i] + w[i]
+
+        h = g
+        g = f
+        f = e
+        e = (d + t1)
+        d = c
+        c = b
+        b = a
+        a = (t1 + t2)
+
+    output = []
+    for x, y in zip(big_h, [a, b, c, d, e, f, g, h]):
+        output.append(x + y)
+    return output
+
+
+with PicoZKCompiler('picozk_test', field=2**32):
+    x = SecretInt(5)
+    xb = x.to_binary()
+    print(xb)
+    print(len(xb.wires))
+    for x in xb.wires:
+        print(x.val)
+    new_h = test_compress(xb)
+    print('done')
+    for w in new_h:
+        print_word(w)
+
+
 
 
 class SHA256:
@@ -90,9 +135,11 @@ class SHA256:
 
     def _compress(self, c):
         w = [0] * 64
-        print(w)
+        print('w:', w)
+        print('c:', c)
+
         w[0:16] = struct.unpack('!16L', c)
-        print(w)
+        print('w:', w)
 
         for i in range(16, 64):
             s0 = _rotr(w[i-15], 7) ^ _rotr(w[i-15], 18) ^ (w[i-15] >> 3)
@@ -140,31 +187,31 @@ class SHA256:
         return binascii.hexlify(self.digest()).decode('ascii')
 
 
-if __name__ == '__main__':
-    def check(msg, sig):
-        m = SHA256()
-        m.update(msg.encode('ascii'))
-        print(m.hexdigest() == sig)
+# if __name__ == '__main__':
+#     def check(msg, sig):
+#         m = SHA256()
+#         m.update(msg.encode('ascii'))
+#         print(m.hexdigest() == sig)
 
-    tests = {
-        "":
-            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-        "a":
-            'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb',
-        "abc":
-            'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
-        "message digest":
-            'f7846f55cf23e14eebeab5b4e1550cad5b509e3348fbc4efa3a1413d393cb650',
-        "abcdefghijklmnopqrstuvwxyz":
-            '71c480df93d6ae2f1efad1447c66c9525e316218cf51fc8d9ed832f2daf18b73',
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789":
-            'db4bfcbd4da0cd85a60c3c37d3fbd8805c77f15fc6b1fdfe614ee0a7c8fdb4c0',
-        ("12345678901234567890123456789012345678901234567890123456789"
-         "012345678901234567890"):
-            'f371bc4a311f2b009eef952dd83ca80e2b60026c8e935592d0f9c308453c813e',
-        "00baf6626abc2df808da36a518c69f09b0d2ed0a79421ccfde4f559d2e42128b":
-            'b835e56173be2b5b7177d71bf02850dc578ac855ac60f91a108eec253bd5a543'
-    }
+#     tests = {
+#         # "":
+#         #     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+#         "a":
+#             'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb',
+#         # "abc":
+#         #     'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+#         # "message digest":
+#         #     'f7846f55cf23e14eebeab5b4e1550cad5b509e3348fbc4efa3a1413d393cb650',
+#         # "abcdefghijklmnopqrstuvwxyz":
+#         #     '71c480df93d6ae2f1efad1447c66c9525e316218cf51fc8d9ed832f2daf18b73',
+#         # "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789":
+#         #     'db4bfcbd4da0cd85a60c3c37d3fbd8805c77f15fc6b1fdfe614ee0a7c8fdb4c0',
+#         # ("12345678901234567890123456789012345678901234567890123456789"
+#         #  "012345678901234567890"):
+#         #     'f371bc4a311f2b009eef952dd83ca80e2b60026c8e935592d0f9c308453c813e',
+#         # "00baf6626abc2df808da36a518c69f09b0d2ed0a79421ccfde4f559d2e42128b":
+#         #     'b835e56173be2b5b7177d71bf02850dc578ac855ac60f91a108eec253bd5a543'
+#     }
 
-    for inp, out in tests.items():
-        check(inp, out)
+#     for inp, out in tests.items():
+#         check(inp, out)

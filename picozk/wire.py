@@ -171,5 +171,10 @@ class BinaryWire(Wire):
 
         return BooleanWire(r, self.val, field)
 
-    __xor__ = Wire.__add__
-    __and__ = Wire.__mul__
+    __xor__  = Wire.__add__
+    __rxor__ = __xor__
+    __and__  = Wire.__mul__
+    __rand__ = __and__
+
+    def __invert__(self):
+        return self + 1

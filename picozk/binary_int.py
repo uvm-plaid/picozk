@@ -35,10 +35,22 @@ class BinaryInt:
     __radd__ = __add__
 
     def __rshift__(self, n):
+        assert isinstance(n, int)
+        bw = len(self.wires)
+        return BinaryInt([0 for _ in range(bw-n)] + self.wires[:bw-n])
+
+    def __lshift__(self, n):
+        assert isinstance(n, int)
+        bw = len(self.wires)
+        return BinaryInt(self.wires[bw-n:] + [0 for _ in range(bw-n)])
+
+    def rotr(self, n):
+        assert isinstance(n, int)
         bw = len(self.wires)
         return BinaryInt(self.wires[bw-n:] + self.wires[:bw-n])
 
-    def __lshift__(self, n):
+    def rotl(self, n):
+        assert isinstance(n, int)
         bw = len(self.wires)
         return BinaryInt(self.wires[:bw-n] + self.wires[bw-n:])
 
@@ -49,6 +61,9 @@ class BinaryInt:
     def __and__(self, other):
         out_wires = [a & b for a, b in zip(self.wires, self._wires_of(other))]
         return BinaryInt(out_wires)
+
+    def __invert__(self):
+        return BinaryInt([~b for b in self.wires])
 
     def is_negative(self):
         return self.wires[0]
