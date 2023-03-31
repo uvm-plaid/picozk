@@ -2,7 +2,7 @@ from picozk import *
 
 class ZKStack:
     def __init__(self, max_size):
-        self.ram = ZKRAM(max_size)
+        self.ram = ZKRAM(max_size+1)
         self.top = 0
 
     def cond_pop(self, cond):
@@ -22,6 +22,9 @@ class ZKStack:
     def push(self, v):
         self.cond_push(1, v)
 
+    def __str__(self):
+        return f'ZKStack({self.ram.val[:val_of(self.top)]})'
+
 class ZKList:
     def __init__(self, xs):
         self.ram = ZKRAM(len(xs))
@@ -38,4 +41,4 @@ class ZKList:
         return len(self.ram)
 
     def __str__(self):
-        return f'SecretIndexList({self.ram.val})'
+        return f'ZKList({self.ram.val})'

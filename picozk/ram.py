@@ -1,9 +1,9 @@
 from .wire import *
-from . import compiler
+from . import config
 
 class ZKRAM:
     def __init__(self, size):
-        self.cc = compiler.cc
+        self.cc = config.cc
         self.size = size
         self.wire = self.cc.next_wire()
         rn = self.wire.replace('$', '')
