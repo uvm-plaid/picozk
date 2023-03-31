@@ -20,7 +20,17 @@ def test2(x):
         z = 20
     return z + 32
 
-with PicoZKCompiler('picozk_test'):
+# Note: this doesn't actually work - there is no way
+# to communicate the guard to the datatype
+@oblif
+def test3(x, stk):
+    if x == 3:
+        stk.push(x)
+    else:
+        stk.push(x+5)
+
+
+with PicoZKCompiler('picozk_test', options=['ram']):
     x = SecretInt(5)
     r1 = test(x)
     reveal(r1)

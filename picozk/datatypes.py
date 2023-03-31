@@ -23,7 +23,7 @@ class ZKStack:
         self.cond_push(1, v)
 
     def __str__(self):
-        return f'ZKStack({self.ram.val[:val_of(self.top)]})'
+        return f'ZKStack({self.ram.val[1:val_of(self.top)+1]})'
 
 class ZKList:
     def __init__(self, xs):
