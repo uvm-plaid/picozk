@@ -28,8 +28,11 @@ class BinaryInt:
 
         for a, b in zip(reversed(self.wires), reversed(self._wires_of(other))):
             ab = a + b
-            out_wires.append(ab + carry)
+            out = ab + carry
+            out = out % 2 if isinstance(out, int) else out
+            out_wires.append(out)
             carry = (a * b) + (ab * carry)
+            carry = carry % 2 if isinstance(carry, int) else carry
 
         return BinaryInt(list(reversed(out_wires)))
     __radd__ = __add__

@@ -7,6 +7,7 @@ __license__ = 'MIT'
 import copy
 import struct
 import binascii
+import sys
 
 from picozk import *
 from picozk import util
@@ -74,7 +75,8 @@ class ZKSHA256:
 
     def compress(self, chunk):
         w = [BinaryInt([0 for _ in range(32)]) for _ in range(64)]
-        w[0] = chunk
+        w[0:15] = chunk
+        print('w IS:', print_words(w))
 
         for i in range(16, 64):
             s0 = w[i-15].rotr(7) ^ w[i-15].rotr(18) ^ (w[i-15] >> 3)
@@ -102,16 +104,38 @@ class ZKSHA256:
         for i, (x, y) in enumerate(zip(self._h, [a, b, c, d, e, f, g, h])):
             self._h[i] = (x + y)
 
-    def hash(self, inp):
-        self.compress(inp)
+    def hash(self, msg):
+        padding_amount = 512 - ((len(msg) + 1 + 64) % 512)
+        padded_msg = msg + [1] + [0]*padding_amount + util.encode_int(len(msg), 2**64)
+        assert len(padded_msg) % 512 == 0
+        chunks = [padded_msg[i:i+512] for i in range(0, len(padded_msg), 512)]
+        chunk_words = [[BinaryInt(chunk[i:i+32]) for i in range(0, len(chunk), 32)] for chunk in chunks]
+        for chunk in chunk_words:
+            self.compress(chunk)
         return self._h
 
 with PicoZKCompiler('picozk_test', field=2**32):
     v = 2147483648
+    v = 97
     x = SecretInt(v)
     xb = x.to_binary()
+    bits = [SecretBit(x) for x in [0,1,1,0,0,0,0,1]]
+    bs = [1,1,0,0,0,1,0,0,0,1,1,1,0,0,0,0,0,1,1,0,0,1,0,0,0,1,1,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,1,0,1,0,0,0,1,
+          1,0,0,1,0,1,0,0,1,1,0,0,1,0,0,1,1,0,0,1,0,0,0,0,1,1,1,0,0,1,0,0,1,1,0,1,0,1,0,0,1,1,0,1,0,1,0,1,1,
+          0,0,1,1,0,0,0,1,1,0,1,0,0,0,1,1,0,0,1,0,1,0,1,1,0,0,1,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,0,1,1,0,
+          0,0,1,1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,1,0,1,0,0,0,0,1,1,1,0,0,1,0,0,1,1,0,1,1,1,0,1,1,0,0,
+          0,0,1,0,0,1,1,0,0,0,0,0,1,1,0,0,1,0,0,0,1,1,0,0,1,0,1,0,0,1,1,0,0,1,0,0,1,1,0,0,1,0,0,0,0,1,1,0,0,
+          0,0,0,1,1,0,0,0,1,0,0,0,1,1,1,0,0,1,0,0,1,1,0,0,0,0,0,1,1,0,0,1,1,0,0,0,1,1,1,0,0,1,0,0,1,1,0,1,1,
+          0,0,1,1,0,0,0,1,1,0,0,1,1,1,0,0,0,0,0,1,1,0,0,0,1,0,0,1,1,0,1,0,1,0,1,1,0,0,0,0,1,0,0,1,1,0,1,1,0,
+          0,0,1,1,0,0,1,1,0,1,1,0,0,0,0,1,0,1,1,0,0,1,0,0,0,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0,
+          1,1,0,0,1,1,0,0,1,1,0,0,1,0,0,0,0,1,1,0,0,1,0,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,0,0,1,1,0,0,0,0,1,0,0,
+          1,1,0,1,1,0,0,0,1,1,0,0,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,0,1,0,1,1,
+          0,0,0,1,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0]
+    bits = [SecretBit(x) for x in bs]
+    #print(xb.wires)
     h = ZKSHA256()
-    digest = h.hash(xb)
+    #digest = h.hash(xb.wires)
+    digest = h.hash(bits)
     print('done')
     print(len(digest))
     print(print_words(digest))
@@ -135,6 +159,7 @@ class SHA256:
         w = [0] * 64
 
         w[0:16] = struct.unpack('!16L', c)
+        print('w IS:', w)
 
         for i in range(16, 64):
             s0 = _rotr(w[i-15], 7) ^ _rotr(w[i-15], 18) ^ (w[i-15] >> 3)
@@ -165,6 +190,9 @@ class SHA256:
         if not m:
             return
 
+        print('message:', m, int.from_bytes(m, byteorder=sys.byteorder))
+        print('bin:', bin(int.from_bytes(m, byteorder=sys.byteorder)))
+        #print('message:', struct.unpack('!L', m))
         self._cache += m
         self._counter += len(m)
 
@@ -191,8 +219,8 @@ if __name__ == '__main__':
         print(m.hexdigest() == sig)
 
     tests = {
-        "":
-            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        # "":
+        #     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
         # "a":
         #     'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb',
         # "abc":
@@ -206,8 +234,8 @@ if __name__ == '__main__':
         # ("12345678901234567890123456789012345678901234567890123456789"
         #  "012345678901234567890"):
         #     'f371bc4a311f2b009eef952dd83ca80e2b60026c8e935592d0f9c308453c813e',
-        # "00baf6626abc2df808da36a518c69f09b0d2ed0a79421ccfde4f559d2e42128b":
-        #     'b835e56173be2b5b7177d71bf02850dc578ac855ac60f91a108eec253bd5a543'
+        "00baf6626abc2df808da36a518c69f09b0d2ed0a79421ccfde4f559d2e42128b":
+            'b835e56173be2b5b7177d71bf02850dc578ac855ac60f91a108eec253bd5a543'
     }
 
     for inp, out in tests.items():

@@ -11,6 +11,10 @@ def SecretInt(x):
     assert x % config.cc.field == x
     return config.cc.add_to_witness(int(x) % config.cc.field)
 
+def SecretBit(x):
+    assert x % 2 == x
+    return config.cc.add_to_binary_witness(int(x) % 2)
+
 def reveal(x):
     config.cc.emit_gate('assert_zero', (x + (-val_of(x))).wire, effect=True, field=x.field)
 
@@ -85,6 +89,12 @@ class PicoZKCompiler(object):
         self.emit(f'  {r} <- @private();')
         self.witness_file.write(f'  < {x} >;\n')
         return ArithmeticWire(r, x, config.cc.field)
+
+    def add_to_binary_witness(self, x):
+        r = self.next_wire()
+        self.emit(f'  {r} <- @private();')
+        self.witness_file.write(f'  < {x} >;\n')
+        return BinaryWire(r, x, 2)
 
     @functools.cache
     def constant_wire(self, e):
