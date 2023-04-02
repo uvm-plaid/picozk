@@ -26,23 +26,23 @@ class BinaryInt:
         out_wires = []
         carry = 0
 
-        for a, b in zip(self.wires, self._wires_of(other)):
+        for a, b in zip(reversed(self.wires), reversed(self._wires_of(other))):
             ab = a + b
             out_wires.append(ab + carry)
             carry = (a * b) + (ab * carry)
 
-        return BinaryInt(out_wires)
+        return BinaryInt(list(reversed(out_wires)))
     __radd__ = __add__
 
     def __rshift__(self, n):
         assert isinstance(n, int)
         bw = len(self.wires)
-        return BinaryInt([0 for _ in range(bw-n)] + self.wires[:bw-n])
+        return BinaryInt([0 for _ in range(n)] + self.wires[:bw-n])
 
     def __lshift__(self, n):
         assert isinstance(n, int)
         bw = len(self.wires)
-        return BinaryInt(self.wires[bw-n:] + [0 for _ in range(bw-n)])
+        return BinaryInt(self.wires[bw-n:] + [0 for _ in range(n)])
 
     def rotr(self, n):
         assert isinstance(n, int)
