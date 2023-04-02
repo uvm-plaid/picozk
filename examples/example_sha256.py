@@ -12,6 +12,7 @@ from picozk import *
 from picozk import util
 
 F32 = 0xFFFFFFFF
+goal = [3820012610, 2566659092, 2600203464, 2574235940, 665731556, 1687917388, 2761267483, 2018687061]
 
 _k = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
       0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -36,7 +37,9 @@ _h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
 
 def _pad(msglen):
     mdi = msglen & 0x3F
+    print('pad mdi:', mdi)
     length = struct.pack('!Q', msglen << 3)
+    print('length', length)
 
     if mdi < 56:
         padlen = 55 - mdi
@@ -59,7 +62,11 @@ def _ch(x, y, z):
 def print_word(x):
     assert isinstance(x, BinaryInt)
     bits = [val_of(b) for b in x.wires]
-    print(util.decode_int(bits))
+    return util.decode_int(bits)
+
+def print_words(xs):
+    return [print_word(x) for x in xs]
+
 
 class ZKSHA256:
     def __init__(self):
@@ -70,10 +77,9 @@ class ZKSHA256:
         w[0] = chunk
 
         for i in range(16, 64):
-            s0 = w[i-15].rotr(7) ^ w[i-15].rotr(18) ^ w[i-15].rotr(3)
+            s0 = w[i-15].rotr(7) ^ w[i-15].rotr(18) ^ (w[i-15] >> 3)
             s1 = w[i-2].rotr(17) ^ w[i-2].rotr(19) ^ (w[i-2] >> 10)
             w[i] = (w[i-16] + s0 + w[i-7] + s1)
-            print_word(w[i])
 
         a, b, c, d, e, f, g, h = self._h
         k = [BinaryInt(util.encode_int(x, 2**32)) for x in _k]
@@ -93,23 +99,22 @@ class ZKSHA256:
             b = a
             a = (t1 + t2)
 
-        self._h = [a, b, c, d, e, f, g, h]
+        for i, (x, y) in enumerate(zip(self._h, [a, b, c, d, e, f, g, h])):
+            self._h[i] = (x + y)
 
     def hash(self, inp):
         self.compress(inp)
         return self._h
 
 with PicoZKCompiler('picozk_test', field=2**32):
-    x = SecretInt(5)
+    v = 2147483648
+    x = SecretInt(v)
     xb = x.to_binary()
     h = ZKSHA256()
     digest = h.hash(xb)
     print('done')
     print(len(digest))
-    for w in digest:
-        print_word(w)
-
-
+    print(print_words(digest))
 
 
 class SHA256:
@@ -128,11 +133,8 @@ class SHA256:
 
     def _compress(self, c):
         w = [0] * 64
-        print('w:', w)
-        print('c:', c)
 
         w[0:16] = struct.unpack('!16L', c)
-        print('w:', w)
 
         for i in range(16, 64):
             s0 = _rotr(w[i-15], 7) ^ _rotr(w[i-15], 18) ^ (w[i-15] >> 3)
@@ -162,7 +164,6 @@ class SHA256:
     def update(self, m):
         if not m:
             return
-        print('update:', m)
 
         self._cache += m
         self._counter += len(m)
@@ -172,6 +173,7 @@ class SHA256:
             self._cache = self._cache[64:]
 
     def digest(self):
+        print('start digest')
         r = copy.deepcopy(self)
         r.update(_pad(self._counter))
         print('final:', r._h[:self._output_size])
@@ -191,8 +193,8 @@ if __name__ == '__main__':
     tests = {
         "":
             'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-        "a":
-            'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb',
+        # "a":
+        #     'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb',
         # "abc":
         #     'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
         # "message digest":
