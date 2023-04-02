@@ -86,14 +86,14 @@ class PicoZKCompiler(object):
 
     def add_to_witness(self, x):
         r = self.next_wire()
-        self.emit(f'  {r} <- @private();')
+        self.emit(f'  {r} <- @private({self.ARITH_TYPE});')
         self.witness_file.write(f'  < {x} >;\n')
         return ArithmeticWire(r, x, config.cc.field)
 
     def add_to_binary_witness(self, x):
         r = self.next_wire()
-        self.emit(f'  {r} <- @private();')
-        self.witness_file.write(f'  < {x} >;\n')
+        self.emit(f'  {r} <- @private({self.BINARY_TYPE});')
+        self.binary_witness_file.write(f'  < {x} >;\n')
         return BinaryWire(r, x, 2)
 
     @functools.cache
@@ -152,13 +152,11 @@ class PicoZKCompiler(object):
         self.witness_file.write(f'@type field {self.field};\n')
         self.witness_file.write('@begin\n')
 
-        binary_wit_file = open(self.file_prefix + '.type1.wit', 'w')
-        binary_wit_file.write('version 2.0.0-beta;\n')
-        binary_wit_file.write('private_input;\n')
-        binary_wit_file.write(f'@type field 2;\n')
-        binary_wit_file.write('@begin\n')
-        binary_wit_file.write('@end\n')
-        binary_wit_file.close()
+        self.binary_witness_file = open(self.file_prefix + '.type1.wit', 'w')
+        self.binary_witness_file.write('version 2.0.0-beta;\n')
+        self.binary_witness_file.write('private_input;\n')
+        self.binary_witness_file.write(f'@type field 2;\n')
+        self.binary_witness_file.write('@begin\n')
 
         ins_file = open(self.file_prefix + '.type0.ins', 'w')
         ins_file.write('version 2.0.0-beta;\n')
@@ -182,8 +180,10 @@ class PicoZKCompiler(object):
 
         self.emit('@end')
         self.witness_file.write('@end\n')
+        self.binary_witness_file.write('@end\n')
 
         self.relation_file.close()
         self.witness_file.close()
+        self.binary_witness_file.close()
         cc = None
 
