@@ -9,7 +9,7 @@ NUM_PREFS = 15
 
 # iterations <= n^2
 #ITERS = NUM_INDIVIDUALS**2
-ITERS = 100
+ITERS = 200
 
 # men are 0..n, women are n..2n
 men = list(range(NUM_INDIVIDUALS))
