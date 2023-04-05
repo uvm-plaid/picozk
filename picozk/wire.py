@@ -63,8 +63,13 @@ class Wire:
                 raise Exception(f'unknown type for multiplication: {type(other)}')
 
             return type(self)(r, (self.val * val_of(other)) % self.field, self.field)
-
     __rmul__ = __mul__
+
+    def __mod__(self, other):
+        assert isinstance(other, int)
+        if other != self.field:
+            raise Exception('unsupported modulus:', other)
+        return self
 
     def __bool__(self):
         raise Exception('unsupported')
