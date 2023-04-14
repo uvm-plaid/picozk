@@ -1,4 +1,3 @@
-
 from picozk import *
 from picozk.poseidon_hash import PoseidonHash
 
