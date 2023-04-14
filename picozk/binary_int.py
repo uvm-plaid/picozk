@@ -3,6 +3,7 @@ from typing import List
 from .compiler import *
 from . import config
 from . import util
+from . import wire
 
 @dataclass
 class BinaryInt:
@@ -67,3 +68,24 @@ class BinaryInt:
 
     def is_negative(self):
         return self.wires[0]
+
+    def to_arithmetic(self):
+        field = config.cc.field
+        wire_names = config.cc.allocate(len(self.wires), field=2)
+
+        for new_w, old_w in zip(wire_names, self.wires):
+            if isinstance(old_w, int):
+                config.cc.emit(f'  {new_w} <- {config.cc.BINARY_TYPE}: < {old_w} >;')
+            elif isinstance(old_w, wire.BinaryWire):
+                config.cc.emit(f'  {new_w} <- {config.cc.BINARY_TYPE}: {old_w.wire};')
+            else:
+                raise Exception('Unsupported wire element:', old_w)
+
+        bits = [wire.val_of(b) for b in self.wires]
+        val = util.decode_int(bits)
+
+        r = config.cc.next_wire()
+
+        config.cc.emit(f'  {config.cc.ARITH_TYPE}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
+
+        return wire.ArithmeticWire(r, val, field)
