@@ -5,18 +5,18 @@ import pandas as pd
 
 SCALE_FACTOR = 1000
 p = 2**61-1
-# bitwidth is 10
+# bitwidth is 13
 
 # Generate a lookup table for Laplace noise samples
 def gen_laplace_table(sensitivity):
     # Convert a number into bits
     def bitfield(n):
-        return [int(x) for x in '{0:010b}'.format(n)]
+        return [int(x) for x in '{0:013b}'.format(n)]
 
     # Convert bits into a decimal in [0,1]
     def bval(bits):
         tot = 0
-        for i,b in zip(range(1, 11), bits):
+        for i,b in zip(range(1, 14), bits):
             tot = tot + b/(2**i)
         return tot
 
@@ -26,7 +26,7 @@ def gen_laplace_table(sensitivity):
         return sensitivity * np.sign(U) * np.log(1-2*np.abs(U))
 
     table = []
-    for n in range(1, 1023):
+    for n in range(1, 8191):
         v = bval(bitfield(n))
         lap = lap_draw(v)
 
@@ -75,7 +75,7 @@ with PicoZKCompiler('picozk_test', field=p, options=['ram']):
     for i in range(5):
         digest = poseidon_hash.hash([seed])
         x = digest.to_binary()
-        shifted_x = x >> 51
+        shifted_x = x >> 48
 
         # create a uniform draw in [0, 1023]
         U = shifted_x.to_arithmetic()
