@@ -2,7 +2,11 @@ import numpy as np
 from picozk import *
 
 with PicoZKCompiler('picozk_test'):
-    y = np.random.randint(1, 10, 10000)
-    sy = np.array([SecretInt(x) for x in y])
-    z = sy.sum()
-    print(z)
+
+    SecretMatrix = np.vectorize(SecretInt)
+    a = SecretMatrix(np.random.randint(1, 10, size=(50, 5)))
+    b = SecretMatrix(np.random.randint(1, 10, size=(5, 3)))
+    c = a @ b
+
+    reveal_matrix = np.vectorize(reveal)
+    reveal_matrix(c)
