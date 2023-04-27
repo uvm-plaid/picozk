@@ -24,11 +24,31 @@ def assert0(x):
 def mux(a, b, c):
     if isinstance(a, int):
         return b if a else c
-    elif isinstance(a, BooleanWire):
+    elif isinstance(a, BooleanWire) and \
+         isinstance(b, (int, ArithmeticWire)) and \
+         isinstance(c, (int, ArithmeticWire)):
         return a.to_arith() * b + (~a).to_arith() * c
     else:
-        raise Exception('unknown type for mux:', a)
+        raise Exception('unknown types for mux:', a, b, c)
 
+def mux_bool(a, b, c):
+    if isinstance(a, int):
+        return b if a else c
+    elif isinstance(a, BooleanWire):
+        return a * b + (~a) * c
+    else:
+        raise Exception('unknown types for mux_bool:', a, b, c)
+
+def modular_inverse(x, p):
+    if isinstance(x, int):
+        return util.modular_inverse(x, p)
+    elif isinstance(x, ArithmeticWire):
+        assert x.field == p
+        inv = SecretInt(util.modular_inverse(val_of(x), p))
+        assert0(x * inv - 1)
+        return inv
+    else:
+        raise Exception('unknown type for modular inverse:', x)
 
 
 @dataclass
