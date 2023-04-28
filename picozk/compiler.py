@@ -51,11 +51,6 @@ def modular_inverse(x, p):
         raise Exception('unknown type for modular inverse:', x)
 
 
-@dataclass
-class WireBundle:
-    wires: List[Wire]
-
-
 class PicoZKCompiler(object):
     def __init__(self, file_prefix, field=2**61-1, options=[]):
         self.file_prefix = file_prefix
