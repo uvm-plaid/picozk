@@ -5,9 +5,19 @@ from ecdsa import numbertheory
 
 from dataclasses import dataclass
 
+# Curve & generator parameters
+g = ecdsa.ecdsa.generator_secp256k1
+p = g.curve().p()
+n = g.order()
 
-p = 2**256 - 2**32 - 2**9 - 2**8 - 2**7 - 2**6 - 2**4 - 1
+# Generate secret & public keys
+secret = randrange( 1, n )
+pubkey = ecdsa.ecdsa.Public_key( g, g * secret )
+privkey = ecdsa.ecdsa.Private_key( pubkey, secret )
 
+# Sign a hash value
+h = 13874918263
+sig = privkey.sign(h, randrange(1,n))
 
 @dataclass
 class CurvePoint:
@@ -15,11 +25,13 @@ class CurvePoint:
     x: ArithmeticWire
     y: ArithmeticWire
 
+    # Mux for a curve point
     def mux(self, cond, other):
         return CurvePoint(mux_bool(cond, self.is_infinity, other.is_infinity),
                           mux(cond, self.x, other.x),
                           mux(cond, self.y, other.y))
 
+    # Point doubling
     def double(self):
         a = 0
         l = ((3*(self.x*self.x) + a) * modular_inverse(2*self.y, p)) % p
@@ -28,6 +40,7 @@ class CurvePoint:
         y3 = (l * (self.x - x3) - self.y)
         return CurvePoint(self.is_infinity, x3 % p, y3 % p)
 
+    # Point addition
     def add(self, other):
         assert isinstance(other, CurvePoint)
         assert val_of(self.is_infinity) == False
@@ -37,6 +50,7 @@ class CurvePoint:
         y3 = l * (self.x - x3) - self.y
         return self.mux(other.is_infinity, CurvePoint(False, x3 % p, y3 % p))
 
+    # Point scaling by a scalar via repeated doubling
     def scale(self, s):
         bits = s.to_binary()
         res = CurvePoint(True, 0, 0)
@@ -46,35 +60,29 @@ class CurvePoint:
             temp = temp.double()
         return res
 
+# Verify the ECDSA signature represented by (r, s)
+def verify(r, s, hash_val, pubkey):
+    c = modular_inverse(s, n)
+    u1 = hash_val * c
+    u2 = r * c
 
-g = ecdsa.ecdsa.generator_secp256k1
-n = g.order()
-secret = randrange( 1, n )
-pubkey = ecdsa.ecdsa.Public_key( g, g * secret )
-privkey = ecdsa.ecdsa.Private_key( pubkey, secret )
-
-h = 13874918263
-sig = privkey.sign(h, randrange(1,n))
-
-def verify(signature, hash_val, pubkey):
-    r = signature.r
-    s = signature.s
-
-    c = util.modular_inverse(s, n)
-    u1 = SecretInt((hash_val * c) % n)  # TODO: need field switching
-    u2 = SecretInt((r * c) % n)
+    u1_p = u1.to_binary().to_arithmetic(field=p)
+    u2_p = u2.to_binary().to_arithmetic(field=p)
 
     sg = CurvePoint(False, g.x(), g.y())
     spk = CurvePoint(False, pubkey.point.x(), pubkey.point.y())
 
-    #xy = u1 * g + u2 * pubkey.point
-    xy1 = sg.scale(u1)
-    xy2 = spk.scale(u2)
+    xy1 = sg.scale(u1_p)
+    xy2 = spk.scale(u2_p)
     xy = xy1.add(xy2)
+    x_n = xy.x.to_binary().to_arithmetic(field=n)
 
-    return xy.x == r
+    return x_n - r
 
-with PicoZKCompiler('picozk_test', field=p):
-    result = verify(sig, h, pubkey)
-    print(result)
-    assert0(~result)
+# Example: secret signature, secret hash value; public pubkey
+with PicoZKCompiler('picozk_test', field=[p,n]):
+    sig_r = SecretInt(sig.r, field=n)
+    sig_s = SecretInt(sig.s, field=n)
+    secret_h = SecretInt(h, field=n)
+    result = verify(sig_r, sig_s, secret_h, pubkey)
+    assert0(result)

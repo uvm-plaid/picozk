@@ -42,7 +42,7 @@ def modular_inverse(x, p):
         return util.modular_inverse(x, p)
     elif isinstance(x, ArithmeticWire):
         assert x.field == p
-        inv = SecretInt(util.modular_inverse(val_of(x), p))
+        inv = SecretInt(util.modular_inverse(val_of(x), p), field=p)
         assert0(x * inv - 1)
         return inv
     else:
