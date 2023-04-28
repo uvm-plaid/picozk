@@ -23,7 +23,7 @@ class ZKRAM:
     def read(self, idx):
         r = self.cc.next_wire()
         self.cc.emit(f'  {r} <- @call(read_ram, {self.wire}, {wire_of(idx)});')
-        return ArithmeticWire(r, self.val[val_of(idx)], self.cc.field)
+        return ArithmeticWire(r, self.val[val_of(idx)], self.cc.fields[0])
 
     def __len__(self):
         return self.size

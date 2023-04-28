@@ -7,13 +7,11 @@ from .wire import *
 from .binary_int import BinaryInt
 from . import config
 
-def SecretInt(x):
-    assert x % config.cc.field == x
-    return config.cc.add_to_witness(int(x) % config.cc.field)
+def SecretInt(x, field=None):
+    return config.cc.add_to_witness(x, field)
 
 def SecretBit(x):
-    assert x % 2 == x
-    return config.cc.add_to_binary_witness(int(x) % 2)
+    return config.cc.add_to_witness(x, 2)
 
 def reveal(x):
     config.cc.emit_gate('assert_zero', (x + (-val_of(x))).wire, effect=True, field=x.field)
@@ -55,24 +53,28 @@ class PicoZKCompiler(object):
     def __init__(self, file_prefix, field=2**61-1, options=[]):
         self.file_prefix = file_prefix
         self.current_wire = 0
-        self.field = field
         self.options = options
 
-        self.ARITH_TYPE = 0
-        self.BINARY_TYPE = 1
-        self.RAM_TYPE = 2
+        if isinstance(field, int):
+            self.fields = [field]
+        elif isinstance(field, list):
+            self.fields = field
+        else:
+            raise Exception('unknown field spec:', field)
+
+        self.fields.append(2)                   # add the binary field
+        self.BINARY_TYPE = len(self.fields) - 1 # binary type is the last field
+        self.RAM_TYPE = len(self.fields)        # RAM type is the one after that
 
     def emit(self, s=''):
         self.relation_file.write(s)
         self.relation_file.write('\n')
 
     def type_of(self, field):
-        if field == self.field:
-            return self.ARITH_TYPE
+        if field in self.fields:
+            return self.fields[field]
         elif field == 2:
             return self.BINARY_TYPE
-        elif field == None:
-            return self.ARITH_TYPE
         else:
             raise Exception('no known type for field:', field)
 
@@ -83,7 +85,11 @@ class PicoZKCompiler(object):
         return r
 
     def emit_gate(self, gate, *args, effect=False, field=None):
-        type_arg = self.type_of(field)
+        if field is None:
+            type_arg = 0
+        else:
+            type_arg = self.fields.index(field)
+
         args_str = ', '.join([str(a) for a in args])
         if effect:
             self.emit(f'  @{gate}({type_arg}: {args_str});')
@@ -99,21 +105,31 @@ class PicoZKCompiler(object):
         self.emit_gate('new', f'${i} ... ${i + n-1}', effect=True, field=field)
         return [f'${i}' for i in range(i, i+n)]
 
-    def add_to_witness(self, x):
-        r = self.next_wire()
-        self.emit(f'  {r} <- @private({self.ARITH_TYPE});')
-        self.witness_file.write(f'  < {x} >;\n')
-        return ArithmeticWire(r, x, config.cc.field)
+    def add_to_witness(self, x, field):
+        if field == None:
+            field_type = 0
+            field = self.fields[field_type]
+        else:
+            field_type = self.fields.index(field)
 
-    def add_to_binary_witness(self, x):
-        r = self.next_wire()
-        self.emit(f'  {r} <- @private({self.BINARY_TYPE});')
-        self.binary_witness_file.write(f'  < {x} >;\n')
-        return BinaryWire(r, x, 2)
+        x = int(x)
+        assert x % field == x
 
+        r = self.next_wire()
+        self.emit(f'  {r} <- @private({field_type});')
+        self.witness_files[field_type].write(f'  < {x} >;\n')
+
+        if field == 2:
+            return BinaryWire(r, x, 2)
+        else:
+            return ArithmeticWire(r, x, field)
+
+    # TODO: this assumes the default arithmetic field
+    # is there a way to fix it if that's wrong?
     @functools.cache
     def constant_wire(self, e):
-        v = int(e) % self.field
+        field = self.fields[0]
+        v = int(e) % field
         r = self.next_wire()
         self.emit(f'  {r} <- <{v}>;')
         return r
@@ -127,7 +143,18 @@ class PicoZKCompiler(object):
         global cc
         config.cc = self
         cc = self
-        self.witness_file = open(self.file_prefix + '.type0.wit', 'w')
+
+        # Open the witness files: one per field
+        self.witness_files = []
+        for t, field in enumerate(self.fields):
+            f = open(self.file_prefix + f'.type{t}.wit', 'w')
+            self.witness_files.append(f)
+
+            f.write('version 2.0.0-beta;\n')
+            f.write('private_input;\n')
+            f.write(f'@type field {field};\n')
+            f.write('@begin\n')
+
         self.relation_file = open(self.file_prefix + '.rel', 'w')
 
         self.emit('version 2.0.0-beta;')
@@ -137,8 +164,8 @@ class PicoZKCompiler(object):
         if 'ram' in self.options:
             self.emit(f'@plugin ram_arith_v0;')
 
-        self.emit(f'@type field {self.field};')
-        self.emit(f'@type field 2;')
+        for field in self.fields:
+            self.emit(f'@type field {field};')
 
         if 'ram' in self.options:
             s = '@type @plugin(ram_arith_v0, ram, 0, {0}, {1}, {2});'
@@ -146,9 +173,14 @@ class PicoZKCompiler(object):
                                2000, # total allocation size
                                2000)) # not sure
 
-        bits_per_fe = util.get_bits_for_field(self.field)
-        self.emit(f'@convert(@out: {self.ARITH_TYPE}:1, @in: {self.BINARY_TYPE}:{bits_per_fe});')
-        self.emit(f'@convert(@out: {self.BINARY_TYPE}:{bits_per_fe}, @in: {self.ARITH_TYPE}:1);')
+        for t, field in enumerate(self.fields):
+            if field != 2:
+                bits_per_fe = util.get_bits_for_field(field)
+                self.emit(f'@convert(@out: {t}:1, @in: {self.BINARY_TYPE}:{bits_per_fe});')
+                self.emit(f'@convert(@out: {self.BINARY_TYPE}:{bits_per_fe}, @in: {t}:1);')
+        # bits_per_fe = util.get_bits_for_field(self.field)
+        # self.emit(f'@convert(@out: {self.ARITH_TYPE}:1, @in: {self.BINARY_TYPE}:{bits_per_fe});')
+        # self.emit(f'@convert(@out: {self.BINARY_TYPE}:{bits_per_fe}, @in: {self.ARITH_TYPE}:1);')
 
         self.emit('@begin')
 
@@ -162,43 +194,24 @@ class PicoZKCompiler(object):
             self.emit('    @plugin(ram_arith_v0, write);')
             self.emit()
 
-        self.witness_file.write('version 2.0.0-beta;\n')
-        self.witness_file.write('private_input;\n')
-        self.witness_file.write(f'@type field {self.field};\n')
-        self.witness_file.write('@begin\n')
-
-        self.binary_witness_file = open(self.file_prefix + '.type1.wit', 'w')
-        self.binary_witness_file.write('version 2.0.0-beta;\n')
-        self.binary_witness_file.write('private_input;\n')
-        self.binary_witness_file.write(f'@type field 2;\n')
-        self.binary_witness_file.write('@begin\n')
-
-        ins_file = open(self.file_prefix + '.type0.ins', 'w')
-        ins_file.write('version 2.0.0-beta;\n')
-        ins_file.write('public_input;\n')
-        ins_file.write(f'@type field {self.field};\n')
-        ins_file.write('@begin\n')
-        ins_file.write('@end\n')
-        ins_file.close()
-
-        binary_ins_file = open(self.file_prefix + '.type1.ins', 'w')
-        binary_ins_file.write('version 2.0.0-beta;\n')
-        binary_ins_file.write('public_input;\n')
-        binary_ins_file.write(f'@type field 2;\n')
-        binary_ins_file.write('@begin\n')
-        binary_ins_file.write('@end\n')
-        binary_ins_file.close()
-
+        for t, field in enumerate(self.fields):
+            f = open(self.file_prefix + f'.type{t}.ins', 'w')
+            f.write('version 2.0.0-beta;\n')
+            f.write('public_input;\n')
+            f.write(f'@type field {field};\n')
+            f.write('@begin\n')
+            f.write('@end\n')
+            f.close()
 
     def __exit__(self, exception_type, exception_value, traceback):
         global cc
 
         self.emit('@end')
-        self.witness_file.write('@end\n')
-        self.binary_witness_file.write('@end\n')
+
+        for f in self.witness_files:
+            f.write('@end\n')
+            f.close()
 
         self.relation_file.close()
-        self.witness_file.close()
-        self.binary_witness_file.close()
         cc = None
 

@@ -150,10 +150,11 @@ class ArithmeticWire(Wire):
 
     def to_binary(self):
         assert self.field > 2
+        field_type = config.cc.fields.index(self.field)
         bits = util.encode_int(self.val, self.field)
         intv = util.decode_int(bits)
         wire_names = config.cc.allocate(len(bits))
-        config.cc.emit(f'  {config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]} <- @convert({config.cc.ARITH_TYPE}: {self.wire});')
+        config.cc.emit(f'  {config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]} <- @convert({field_type}: {self.wire});')
         wires = [BinaryWire(name, val, 2) for name, val in zip(wire_names, bits)]
         return BinaryInt(wires)
 
@@ -161,7 +162,8 @@ class ArithmeticWire(Wire):
 class BinaryWire(Wire):
     def to_bool(self):
         assert self.field == 2
-        field = config.cc.field
+        field = config.cc.fields[0]
+        field_type = 0
         num_bits = util.get_bits_for_field(field)
         wire_names = config.cc.allocate(num_bits, field=2)
 
@@ -172,7 +174,7 @@ class BinaryWire(Wire):
 
         r = config.cc.next_wire()
 
-        config.cc.emit(f'  {config.cc.ARITH_TYPE}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
+        config.cc.emit(f'  {field_type}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
 
         return BooleanWire(r, self.val, field)
 

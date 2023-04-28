@@ -69,11 +69,21 @@ class BinaryInt:
     def is_negative(self):
         return self.wires[0]
 
-    def to_arithmetic(self):
-        field = config.cc.field
-        wire_names = config.cc.allocate(len(self.wires), field=2)
+    def to_arithmetic(self, field=None):
+        if field is None:
+            field = config.cc.fields[0]
+            field_type = 0
+        else:
+            field_type = config.cc.fields.index(field)
 
-        for new_w, old_w in zip(wire_names, self.wires):
+        num_bits = util.get_bits_for_field(field)
+        assert num_bits >= len(self.wires)
+
+        wire_names = config.cc.allocate(num_bits, field=2)
+        # pad with 0s
+        wire_vals = [0]*(num_bits-len(self.wires)) + self.wires
+
+        for new_w, old_w in zip(wire_names, wire_vals):
             if isinstance(old_w, int):
                 config.cc.emit(f'  {new_w} <- {config.cc.BINARY_TYPE}: < {old_w} >;')
             elif isinstance(old_w, wire.BinaryWire):
@@ -86,6 +96,6 @@ class BinaryInt:
 
         r = config.cc.next_wire()
 
-        config.cc.emit(f'  {config.cc.ARITH_TYPE}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
+        config.cc.emit(f'  {field_type}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
 
         return wire.ArithmeticWire(r, val, field)
