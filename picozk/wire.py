@@ -160,6 +160,13 @@ class ArithmeticWire(Wire):
 
 @dataclass(frozen=True)
 class BinaryWire(Wire):
+    def __eq__(self, other):
+        return (self + other) + 1
+    __req__ = __eq__
+
+    def __invert__(self):
+        return self + 1
+
     def to_bool(self):
         assert self.field == 2
         field = config.cc.fields[0]
