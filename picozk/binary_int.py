@@ -43,7 +43,7 @@ class BinaryInt:
     def __lshift__(self, n):
         assert isinstance(n, int)
         bw = len(self.wires)
-        return BinaryInt(self.wires[bw-n:] + [0 for _ in range(n)])
+        return BinaryInt(self.wires[n:] + [0 for _ in range(n)])
 
     def rotr(self, n):
         assert isinstance(n, int)
@@ -53,7 +53,7 @@ class BinaryInt:
     def rotl(self, n):
         assert isinstance(n, int)
         bw = len(self.wires)
-        return BinaryInt(self.wires[:bw-n] + self.wires[bw-n:])
+        return BinaryInt(self.wires[n:] + self.wires[:n])
 
     def __xor__(self, other):
         out_wires = [a ^ b for a, b in zip(self.wires, self._wires_of(other))]
