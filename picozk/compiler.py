@@ -3,9 +3,9 @@ from typing import List
 import pandas as pd
 import numpy as np
 import functools
-from .wire import *
-from .binary_int import BinaryInt
-from . import config
+from picozk.wire import *
+from picozk.binary_int import BinaryInt
+from picozk import config
 
 def SecretInt(x, field=None):
     return config.cc.add_to_witness(x, field)

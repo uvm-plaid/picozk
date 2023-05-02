@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from . import util
-from . import config
-from .binary_int import *
+from picozk import util, config
+from picozk.binary_int import *
 
 def val_of(x):
     if isinstance(x, Wire):

@@ -1,8 +1,7 @@
 from functools import wraps
 import picozk
-from . import util
-from . import config
-from .wire import *
+from picozk import util, config
+from picozk.wire import *
 
 def picozk_function(*args, **kwargs):
     if len(args) == 1 and len(kwargs) == 0 and callable(args[0]):

@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 from typing import List
-from .compiler import *
-from . import config
-from . import util
-from . import wire
+from picozk.compiler import *
+from picozk import config, util, wire
 
 @dataclass
 class BinaryInt:

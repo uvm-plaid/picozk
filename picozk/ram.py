@@ -1,5 +1,5 @@
-from .wire import *
-from . import config
+from picozk.wire import *
+from picozk import config
 
 class ZKRAM:
     def __init__(self, size):
