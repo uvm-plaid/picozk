@@ -64,12 +64,6 @@ class Wire:
             return type(self)(r, (self.val * val_of(other)) % self.field, self.field)
     __rmul__ = __mul__
 
-    def __mod__(self, other):
-        assert isinstance(other, int)
-        if other != self.field:
-            raise Exception('unsupported modulus:', other)
-        return self
-
     def __bool__(self):
         raise Exception('unsupported')
 
@@ -146,6 +140,12 @@ class ArithmeticWire(Wire):
         if p != None:
             assert p == self.field
         return exp_by_squaring(self, other)
+
+    def __mod__(self, other):
+        assert isinstance(other, int)
+        if other != self.field:
+            raise Exception('unsupported modulus:', other)
+        return self
 
     def to_binary(self):
         assert self.field > 2
