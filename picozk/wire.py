@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from picozk import util, config
 from picozk.binary_int import *
+import math
 
 def val_of(x):
     if isinstance(x, Wire):
@@ -143,9 +144,15 @@ class ArithmeticWire(Wire):
 
     def __mod__(self, other):
         assert isinstance(other, int)
-        if other != self.field:
+        if other == self.field:
+            return self
+        elif math.log2(other) == int(math.log2(other)):
+            bits_to_keep = int(math.log2(other))
+            binary_rep = self.to_binary()
+            new_binary_rep = BinaryInt(binary_rep.wires[-bits_to_keep:])
+            return new_binary_rep.to_arithmetic()
+        else:
             raise Exception('unsupported modulus:', other)
-        return self
 
     def to_binary(self):
         assert self.field > 2
