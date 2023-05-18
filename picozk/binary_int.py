@@ -29,7 +29,7 @@ class BinaryInt:
             ab = a + b
             out = ab + carry % 2
             out_wires.append(out)
-            carry = (a * b) + (ab * carry) % 2
+            carry = ((a + carry) * (b + carry) + carry) % 2
         return BinaryInt(list(reversed(out_wires)))
     __radd__ = __add__
 
