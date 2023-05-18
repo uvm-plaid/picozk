@@ -65,6 +65,11 @@ class Wire:
             return type(self)(r, (self.val * val_of(other)) % self.field, self.field)
     __rmul__ = __mul__
 
+    def __mod__(self, other):
+        assert isinstance(other, int)
+        assert other == self.field
+        return self
+
     def __bool__(self):
         raise Exception('unsupported')
 
