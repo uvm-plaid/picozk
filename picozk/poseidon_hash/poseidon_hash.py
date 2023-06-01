@@ -41,7 +41,7 @@ class PoseidonHash:
         self.security_level = security_level
         self.prime_bit_len = ceil(log2(p))
 
-        if np.gcd(alpha, p-1) == 1:
+        if alpha > 1 and np.gcd(alpha, p-1) == 1:
             self.alpha = alpha
         else:
             raise RuntimeError("Not available alpha")
@@ -69,7 +69,7 @@ class PoseidonHash:
                                                 self.alpha,
                                                 self.prime_bit_len)
         self.rc_field = [int(x) for x in self.rc_field]
-        self.mds_matrix = np.array(rc.mds_matrix_generator(self.field_p, self.t)).astype(int)
+        self.mds_matrix = rc.mds_matrix_generator(self.field_p, self.t)
         self.mds_matrix = [[int(x) for x in y] for y in self.mds_matrix]
 
         self.state = [0 for _ in range(self.t)]
@@ -97,9 +97,9 @@ class PoseidonHash:
             self.state = dot(self.state, self.mds_matrix)
 
 
-    @picozk_function(abs_fns  = [abs_in, abs_fn],
-                     conc_fns = [conc_in, conc_fn],
-                     in_wires = [3, 3], out_wires=3)
+    # @picozk_function(abs_fns  = [abs_in, abs_fn],
+    #                  conc_fns = [conc_in, conc_fn],
+    #                  in_wires = [3, 3], out_wires=3)
     def hash_block(self, input_block, current_state):
         assert len(input_block) == self.t
         self.rc_counter = 0
