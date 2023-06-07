@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='picozk',
-      version='0.1',
+      version='0.2',
       description='PicoZK library & compiler for writing zero-knowledge statements',
       url='none',
       author='Joe Near',
@@ -9,6 +9,5 @@ setup(name='picozk',
       license='GPLv3',
       packages=['picozk'],
       install_requires=[],
-      #package_data={'': ['boilerplate/*']},
-      #include_package_data=True,
+      packages=['picozk', 'picozk/poseidon_hash'],
       zip_safe=False)
