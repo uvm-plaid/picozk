@@ -7,7 +7,6 @@ setup(name='picozk',
       author='Joe Near',
       author_email='jnear@uvm.edu',
       license='GPLv3',
-      packages=['picozk'],
       install_requires=[],
       packages=['picozk', 'picozk/poseidon_hash'],
       zip_safe=False)
