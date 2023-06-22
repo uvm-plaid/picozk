@@ -14,6 +14,11 @@ cd picozk
 pip install .
 ```
 
+If you want to run the [examples](examples), you'll need to install
+some extra python libraries. These can be done by running `pip install
+.[examples]`.
+
+
 ## Usage
 
 To generate a zero-knowledge (ZK) statement, write a Python program
