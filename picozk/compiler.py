@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 from typing import List
-import pandas as pd
-import numpy as np
 import functools
 from picozk.wire import *
 from picozk.binary_int import BinaryInt
