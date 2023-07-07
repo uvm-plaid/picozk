@@ -76,6 +76,11 @@ class Wire:
     def __int__(self):
         raise Exception('unsupported')
 
+    # TODO: can we output delete gates by leveraging GC?
+    # def __del__(self):
+    #     if config.cc:
+    #         config.cc.emit_gate('delete', f'{self.wire}...{self.wire}', effect=True, field=self.field)
+
 @dataclass(frozen=True)
 class BooleanWire(Wire):
     def __and__(self, other):
