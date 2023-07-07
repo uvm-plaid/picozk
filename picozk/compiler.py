@@ -202,7 +202,7 @@ class PicoZKCompiler(object):
             f.close()
 
     def __exit__(self, exception_type, exception_value, traceback):
-        global cc
+        config.cc = None
 
         self.emit('@end')
 
@@ -211,5 +211,4 @@ class PicoZKCompiler(object):
             f.close()
 
         self.relation_file.close()
-        cc = None
 
