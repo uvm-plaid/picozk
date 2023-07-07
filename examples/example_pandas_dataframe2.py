@@ -1,13 +1,6 @@
 from picozk import *
 import pandas as pd
-
-# def series_eq(a, b):
-#     if isinstance(b, int):
-#         return a.apply(lambda x: x == b)
-#     else:
-#         raise Exception('unsupported')
-
-# pd.Series.__eq__ = series_eq
+import numpy as np
 
 with PicoZKCompiler('picozk_test'):
     df = pd.DataFrame(np.random.randint(0,10,size=(500, 4)), columns=list('ABCD'))

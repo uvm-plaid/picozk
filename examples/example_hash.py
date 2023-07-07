@@ -1,4 +1,5 @@
 from picozk import *
+import numpy as np
 
 with PicoZKCompiler('picozk_test'):
     p = 2**31-1

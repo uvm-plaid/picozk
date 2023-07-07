@@ -2,6 +2,7 @@ from picozk import *
 from picozk.poseidon_hash import PoseidonHash
 
 import pandas as pd
+import numpy as np
 
 SCALE_FACTOR = 1000
 p = 2**61-1
