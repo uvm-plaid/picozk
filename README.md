@@ -49,3 +49,12 @@ These files can be used to generate a ZK proof using any backend
 compatible with the [SIEVE intermediate representation
 (IR)](https://stealthsoftwareinc.github.io/wizkit-blog/2021/09/20/introducing-the-sieve-ir.html) -
 for example, the [EMP Toolkit](https://github.com/emp-toolkit/emp-ir).
+
+## Licensing
+
+PicoZK is made available under the MIT License.
+
+This material is based upon work supported by DARPA under Contract No.
+HR001120C0087. Any opinions, findings and conclusions or
+recommendations expressed in this material are those of the author(s)
+and do not necessarily reflect the views of DARPA.
