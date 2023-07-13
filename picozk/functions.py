@@ -1,99 +1,149 @@
 from functools import wraps
+from io import StringIO
+
 import picozk
 from picozk import util, config
 from picozk.wire import *
 
-def picozk_function(*args, **kwargs):
-    if len(args) == 1 and len(kwargs) == 0 and callable(args[0]):
-        raise RuntimeError('Args required')
+def picozk_function(func):
+    name = util.gensym('func')
+    needs_compiling = True
 
-    def decorator(func):
-        needs_compilation = True
-        name = util.gensym('func')
-        iw = kwargs['in_wires']
-        ow = kwargs['out_wires']
+    def _extract_wires(v):
+        if isinstance(v, Wire):
+            return [v]
+        elif isinstance(v, (tuple, list)):
+            l = [_extract_wires(i) for i in v]
+            return [item for sublist in l for item in sublist]
+        elif isinstance(v, BinaryInt):
+            return _extract_wires(v.wires)
+        elif v is None:
+            return []
+        else:
+            raise Exception('unsupported type:', type(v), v)
 
-        abs_in, abs_fn   = kwargs['abs_fns']
-        conc_in, conc_fn = kwargs['conc_fns']
+    def _freshen_wires(v, wires):
+        if isinstance(v, Wire):
+            w = config.cc.next_wire()
+            new_wire = type(v)(f'{w}', v.val, v.field)
+            wires[v] = new_wire
+            return new_wire
+        elif isinstance(v, tuple):
+            return tuple([_freshen_wires(i, wires) for i in v])
+        elif isinstance(v, list):
+            return [_freshen_wires(i, wires) for i in v]
+        elif isinstance(v, BinaryInt):
+            return BinaryInt([_freshen_wires(i, wires) for i in v.wires])
+        elif v is None:
+            return None
+        else:
+            raise Exception('unsupported type:', type(v), v)
 
-        @wraps(func)
-        def wrapped(*args):
-            nonlocal needs_compilation
-            cc = config.cc
+    def _run_function(args):
+        cc = config.cc
+        # get the input wires
+        input_wires = ', '.join([w.wire for w in _extract_wires(*args)])
 
-            if needs_compilation:
-                needs_compilation = False
-                in_str = ', '.join([f'0: {w}' for w in iw])
-                cc.emit(f'  @function({name}, @out: 0:{ow}, @in: {in_str})')
+        # set up the compiler
+        old_current_wire = cc.current_wire
+        cc.current_wire = 1000
+        cc.constant_wire.cache_clear()
+        old_relation_file = cc.relation_file
+        buf = StringIO("")
+        cc.relation_file = buf
 
-                # generate the arguments
-                new_args = []
-                cw = ow
-                in_wire_names = []
-                for nw in iw:
-                    if nw == 1:
-                        in_wire_names.append(f'${cw}')
-                    else:
-                        in_wire_names.append([f'${w}' for w in range(cw, cw+nw)])
-                    cw = cw + nw
+        # run the function
+        output = func(*args)
 
-                # set up the compiler
-                old_current_wire = cc.current_wire
-                cc.current_wire = cw
-                cc.constant_wire.cache_clear()
+        # reset the compiler
+        cc.current_wire = old_current_wire
+        cc.relation_file = old_relation_file
+        cc.constant_wire.cache_clear()
 
-                # generate the input
-                _, in_vals = abs_in(args)
-                new_args = conc_in(in_wire_names, in_vals)
+        # handle the output
+        context_map = {}
+        output_value = _freshen_wires(output, context_map)
+        output_wires = [w.wire for w in context_map.values()]
+        output_spec = ', '.join(output_wires)
 
-                # compile the function
-                output = func(*new_args)
-                output_wires, _ = abs_fn(output)
+        cc.emit(f'  {output_spec} <- @call({name}, {input_wires});')
 
-                if ow == 1:
-                    cc.emit(f'  $0 <- {output_wires};')
-                else:
-                    output_wire_names = [f'${w}' for w in range(0, ow)]
-                    for output_wire_name, wire in zip(output_wire_names, output_wires):
-                        cc.emit(f'  {output_wire_name} <- {wire};')
+        return output_value
 
-                # done compiling
-                cc.emit(f'  @end')
+    def _compile_function(args):
+        # set up the compiler to compile a function
+        cc = config.cc
+        old_current_wire = cc.current_wire
+        cc.current_wire = 1000
+        cc.constant_wire.cache_clear()
+        old_relation_file = cc.relation_file
+        buf = StringIO("")
+        cc.relation_file = buf
 
-                # reset the compiler
-                cc.constant_wire.cache_clear()
-                cc.current_wire = old_current_wire
+        # find wires in the inputs
+        input_map = {}
+        inputs = _freshen_wires(args, input_map)
 
+        # replace input wires with fresh numbers
+        saved_input_wires = []
+        for old, new in input_map.items():
+            saved_input_wires.append(old.wire)
+            old.wire = new.wire
 
-            # construct the function call
-            in_wires, abs_input = abs_in(args)
-            output = func(*abs_input)
+        # run the function
+        output = func(*args)
 
-            input_args = []
-            for wnum, wires in zip(iw, in_wires):
-                if wnum == 1:
-                    input_args.append(wires)
-                else:
-                    wire_names = [cc.next_wire() for _ in range(wnum)]
-                    wire_range = f'{wire_names[0]} ... {wire_names[-1]}'
-                    cc.emit(f'  @new({wire_range});')
-                    for wnew, wold in zip(wire_names, wires):
-                        cc.emit(f'  {wnew} <- {wold};')
-                    input_args.append(wire_range)
+        # restore the old numbers on the input wires
+        for old, saved in zip(input_map.keys(), saved_input_wires):
+            old.wire = saved
 
-            new_args = ', '.join(input_args)
+        # handle the output
+        output_map = {}
+        cc.current_wire = 0
+        extracted_output = _freshen_wires(output, output_map)
+        for old, new in output_map.items():
+            t = cc.fields.index(old.field)
+            cc.emit(f'  {new.wire} <- {t}:{old.wire};')
 
-            if ow == 1:
-                output_wire = cc.next_wire()
-                cc.emit(f'  {output_wire} <- @call({name}, {new_args});')
-                conc_output = conc_fn(output_wire, output)
-            else:
-                output_wires = [cc.next_wire() for _ in range(ow)]
-                cc.emit(f'  {output_wires[0]} ... {output_wires[-1]} <- @call({name}, {new_args});')
-                conc_output = conc_fn(output_wires, output)
+        # print the function
+        cc.relation_file = old_relation_file
+        output_spec = ', '.join([f'{cc.fields.index(w.field)}:1' for w in output_map.values()])
+        input_spec = ', '.join([f'{cc.fields.index(w.field)}:1' for w in input_map.values()])
+        cc.emit(f'\n @function({name}, @out: {output_spec}, @in: {input_spec})')
+        for i, w in enumerate(input_map.values()):
+            t = cc.fields.index(w.field)
+            cc.emit(f'  {w.wire} <- {t}:${i + len(output_map)};')
 
-            return conc_output
+        buf.seek(0)
+        cc.emit(buf.read())
+        cc.emit(' @end\n')
 
-        return wrapped
+        # reset the compiler
+        cc.current_wire = old_current_wire
+        cc.constant_wire.cache_clear()
 
-    return decorator
+        # print the function call
+        input_wires = ', '.join([w.wire for w in input_map.keys()])
+        context_map = {}
+        output_value = _freshen_wires(output, context_map)
+        output_wires = [w.wire for w in context_map.values()]
+        output_spec = ', '.join(output_wires)
+
+        cc.emit(f'  {output_spec} <- @call({name}, {input_wires});')
+
+        return output_value
+
+    @wraps(func)
+    def wrapped(*args):
+        nonlocal needs_compiling
+        cc = config.cc
+
+        if needs_compiling:
+            output_value = _compile_function(args)
+            needs_compiling = False
+        else:
+            output_value = _run_function(args)
+
+        return output_value
+
+    return wrapped
