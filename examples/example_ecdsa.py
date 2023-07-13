@@ -1,4 +1,5 @@
 from picozk import *
+from picozk import util
 import ecdsa
 from random import randrange
 from ecdsa import numbertheory
@@ -52,13 +53,26 @@ class CurvePoint:
 
     # Point scaling by a scalar via repeated doubling
     def scale(self, s):
-        bits = s.to_binary()
-        res = CurvePoint(True, 0, 0)
-        temp = self
-        for b in reversed(bits.wires):
-            res = temp.add(res).mux(b.to_bool(), res)
-            temp = temp.double()
-        return res
+        if isinstance(s, ArithmeticWire):
+            bits = s.to_binary()
+            res = CurvePoint(True, 0, 0)
+            temp = self
+            for b in reversed(bits.wires):
+                res = temp.add(res).mux(b.to_bool(), res)
+                temp = temp.double()
+            return res
+        elif isinstance(s, int):
+            bits = util.encode_int(s, s)
+            res = CurvePoint(True, 0, 0)
+            temp = self
+            for b in reversed(bits):
+                if b:
+                    res = temp.add(res)
+                temp = temp.double()
+            return res
+        else:
+            raise Exception('Unsupported exponent:', s)
+
 
 # Verify the ECDSA signature represented by (r, s)
 def verify(r, s, hash_val, pubkey):
@@ -81,6 +95,16 @@ def verify(r, s, hash_val, pubkey):
 
 # Example: secret signature, secret hash value; public pubkey
 with PicoZKCompiler('picozk_test', field=[p,n]):
+    # test public curve point operations
+    a = CurvePoint(False, pubkey.point.x(), pubkey.point.y())
+    e = 581672931
+    b_pub = a.scale(e)
+    a = CurvePoint(False, pubkey.point.x(), pubkey.point.y())
+    b = a.scale(SecretInt(e))
+    assert0(b_pub.x - b.x)
+    assert0(b_pub.y - b.y)
+
+    # verify a signature
     sig_r = SecretInt(sig.r, field=n)
     sig_s = SecretInt(sig.s, field=n)
     secret_h = SecretInt(h, field=n)
