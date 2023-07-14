@@ -44,12 +44,13 @@ class CurvePoint:
     # Point addition
     def add(self, other):
         assert isinstance(other, CurvePoint)
-        assert val_of(self.is_infinity) == False
         assert val_of(self.x) != val_of(other.x) or val_of(self.y) != val_of(other.y)
         l = ((other.y - self.y) * modular_inverse(other.x - self.x, p)) % p
         x3 = l*l - self.x - other.x
         y3 = l * (self.x - x3) - self.y
-        return self.mux(other.is_infinity, CurvePoint(False, x3 % p, y3 % p))
+        return self.mux(other.is_infinity,
+                        other.mux(self.is_infinity,
+                                  CurvePoint(False, x3 % p, y3 % p)))
 
     # Point scaling by a scalar via repeated doubling
     def scale(self, s):
@@ -95,8 +96,13 @@ def verify(r, s, hash_val, pubkey):
 
 # Example: secret signature, secret hash value; public pubkey
 with PicoZKCompiler('picozk_test', field=[p,n]):
-    # test public curve point operations
+    # test addition
+    inf = CurvePoint(SecretBit(1).to_bool(), 0, 0)
     a = CurvePoint(False, pubkey.point.x(), pubkey.point.y())
+    reveal(inf.add(a).x)
+    reveal(a.add(inf).x)
+
+    # test public curve point operations
     e = 581672931
     b_pub = a.scale(e)
     a = CurvePoint(False, pubkey.point.x(), pubkey.point.y())
