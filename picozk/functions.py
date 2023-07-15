@@ -42,7 +42,7 @@ def picozk_function(func):
     def _run_function(args):
         cc = config.cc
         # get the input wires
-        input_wires = ', '.join([w.wire for w in _extract_wires(*args)])
+        input_wires = ', '.join([w.wire for w in _extract_wires(args)])
 
         # set up the compiler
         old_current_wire = cc.current_wire
@@ -66,7 +66,10 @@ def picozk_function(func):
         output_wires = [w.wire for w in context_map.values()]
         output_spec = ', '.join(output_wires)
 
-        cc.emit(f'  {output_spec} <- @call({name}, {input_wires});')
+        if len(output_wires) == 0:
+            cc.emit(f'  @call({name}, {input_wires});')
+        else:
+            cc.emit(f'  {output_spec} <- @call({name}, {input_wires});')
 
         return output_value
 
@@ -109,7 +112,12 @@ def picozk_function(func):
         cc.relation_file = old_relation_file
         output_spec = ', '.join([f'{cc.fields.index(w.field)}:1' for w in output_map.values()])
         input_spec = ', '.join([f'{cc.fields.index(w.field)}:1' for w in input_map.values()])
-        cc.emit(f'\n @function({name}, @out: {output_spec}, @in: {input_spec})')
+
+        if len(output_map.values()) == 0:
+            cc.emit(f'\n @function({name}, @in: {input_spec})')
+        else:
+            cc.emit(f'\n @function({name}, @out: {output_spec}, @in: {input_spec})')
+
         for i, w in enumerate(input_map.values()):
             t = cc.fields.index(w.field)
             cc.emit(f'  {w.wire} <- {t}:${i + len(output_map)};')
@@ -129,7 +137,10 @@ def picozk_function(func):
         output_wires = [w.wire for w in context_map.values()]
         output_spec = ', '.join(output_wires)
 
-        cc.emit(f'  {output_spec} <- @call({name}, {input_wires});')
+        if len(output_wires) == 0:
+            cc.emit(f'  @call({name}, {input_wires});')
+        else:
+            cc.emit(f'  {output_spec} <- @call({name}, {input_wires});')
 
         return output_value
 

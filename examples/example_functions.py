@@ -10,6 +10,10 @@ from picozk.sha256 import ZKSHA256
 def test_fn(x):
     return [x + x * x, x+5]
 
+@picozk_function
+def test_fn2(x):
+    assert0(x)
+
 with PicoZKCompiler('picozk_test'):
     x = SecretInt(5)
     a, b = test_fn(x)
@@ -18,3 +22,4 @@ with PicoZKCompiler('picozk_test'):
     c, d = test_fn(a)
     reveal(b)
 
+    test_fn2(x - 5)

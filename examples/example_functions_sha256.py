@@ -40,7 +40,7 @@ with PicoZKCompiler('picozk_test'):
           0,1,1,0,0,0,1,0]
     bits = [SecretBit(x) for x in bs]
 
-    for _ in range(200):
+    for _ in range(5):
         digest = run_hash(bits)
 
         for w in digest:
