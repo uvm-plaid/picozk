@@ -23,7 +23,7 @@ def wire_of(e):
         raise Exception('no wire for value', e, 'of type', type(e))
 
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class Wire:
     wire: str
     val: int
@@ -81,7 +81,7 @@ class Wire:
     #     if config.cc:
     #         config.cc.emit_gate('delete', f'{self.wire}...{self.wire}', effect=True, field=self.field)
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class BooleanWire(Wire):
     def __and__(self, other):
         return self * other
@@ -104,8 +104,7 @@ class BooleanWire(Wire):
     def if_else(self, then_val, else_val):
         return else_val + self.to_arith() * (then_val - else_val)
 
-
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
     def __neg__(self):
         return self * (self.field - 1)
@@ -174,7 +173,7 @@ class ArithmeticWire(Wire):
         wires = [BinaryWire(name, val, 2) for name, val in zip(wire_names, bits)]
         return BinaryInt(wires)
 
-@dataclass(frozen=True)
+@dataclass(unsafe_hash=True)
 class BinaryWire(Wire):
     def __eq__(self, other):
         return (self + other) + 1
