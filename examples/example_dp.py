@@ -1,8 +1,8 @@
 from picozk import *
 from picozk.poseidon_hash import PoseidonHash
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 SCALE_FACTOR = 1000
 p = 2**61-1
@@ -89,4 +89,3 @@ with PicoZKCompiler('picozk_test', field=p, options=['ram']):
     # Reveal the noisy histogram
     for i in range(5):
         reveal(histogram[i])
-
