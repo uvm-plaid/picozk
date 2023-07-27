@@ -1,11 +1,9 @@
 from picozk import *
-from dataclasses import dataclass
+
+import numpy as np
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import numpy as np
 
 SCALE = 10000
 p = 2**61-1
@@ -45,13 +43,13 @@ class Classifier(nn.Module):
         self.network = nn.Sequential(
             torch.nn.Conv2d(1, 16, 8, 2, bias=False),
             torch.nn.ReLU(),
-            torch.nn.MaxPool2d(2, 1), 
+            torch.nn.MaxPool2d(2, 1),
             torch.nn.Conv2d(16, 32, 4, 2, bias=False),
-            torch.nn.ReLU(), 
-            torch.nn.MaxPool2d(2, 1), 
-            torch.nn.Flatten(), 
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(2, 1),
+            torch.nn.Flatten(),
             torch.nn.Linear(288, 32, bias=False),
-            torch.nn.ReLU(), 
+            torch.nn.ReLU(),
             torch.nn.Linear(32, 10, bias=False))
     def forward(self, x):
         return self.network(x)
