@@ -62,9 +62,7 @@ with PicoZKCompiler('picozk_test'):
     file_string = [SecretInt(ord(c)) for c in file_data]
     dfa = dfa_from_string('import')
 
-    @picozk_function(abs_fns  = [abs_in, abs_fn],
-                     conc_fns = [conc_in, conc_fn],
-                     in_wires = [1, 1], out_wires=1)
+    @picozk_function
     def next_state(char, state):
         output = 0
 
@@ -76,7 +74,8 @@ with PicoZKCompiler('picozk_test'):
         output = mux(state == accept_state, accept_state, output)
         return output
 
-    state = 0
+    state = SecretInt(0)
+    reveal(state)
     for c in file_string:
         state = next_state(c, state)
 

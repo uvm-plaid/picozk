@@ -17,6 +17,8 @@ def picozk_function(func):
             return [item for sublist in l for item in sublist]
         elif isinstance(v, BinaryInt):
             return _extract_wires(v.wires)
+        elif isinstance(v, (int, float, bool)):
+            return []
         elif v is None:
             return []
         else:
@@ -34,6 +36,8 @@ def picozk_function(func):
             return [_freshen_wires(i, wires) for i in v]
         elif isinstance(v, BinaryInt):
             return BinaryInt([_freshen_wires(i, wires) for i in v.wires])
+        elif isinstance(v, (int, float, bool)):
+            return v
         elif v is None:
             return None
         else:
