@@ -15,6 +15,9 @@ def reveal(x):
     config.cc.emit_gate('assert_zero', (x + (-val_of(x))).wire, effect=True, field=x.field)
 
 def assert0(x):
+    if val_of(x):
+        raise Exception('Failed assert0!', x)
+
     config.cc.emit_gate('assert_zero', x.wire, effect=True, field=x.field)
 
 def mux(a, b, c):
