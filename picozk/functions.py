@@ -5,6 +5,12 @@ import picozk
 from picozk import util, config
 from picozk.wire import *
 
+use_numpy = True
+try:
+    import numpy as np
+except ImportError:
+    use_numpy = False
+
 def picozk_function(func):
     name = util.gensym('func')
     needs_compiling = True
@@ -13,6 +19,9 @@ def picozk_function(func):
         if isinstance(v, Wire):
             return [v]
         elif isinstance(v, (tuple, list)):
+            l = [_extract_wires(i) for i in v]
+            return [item for sublist in l for item in sublist]
+        elif use_numpy and isinstance(v, np.ndarray):
             l = [_extract_wires(i) for i in v]
             return [item for sublist in l for item in sublist]
         elif isinstance(v, BinaryInt):
@@ -34,6 +43,8 @@ def picozk_function(func):
             return tuple([_freshen_wires(i, wires) for i in v])
         elif isinstance(v, list):
             return [_freshen_wires(i, wires) for i in v]
+        elif use_numpy and isinstance(v, np.ndarray):
+            return np.array([_freshen_wires(i, wires) for i in v])
         elif isinstance(v, BinaryInt):
             return BinaryInt([_freshen_wires(i, wires) for i in v.wires])
         elif isinstance(v, (int, float, bool)):
