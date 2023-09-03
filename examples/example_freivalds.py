@@ -8,23 +8,25 @@ n = 40
 m = 50
 l = 35
 
-a = np.random.randint(0, 1000, (n, m))
-b = np.random.randint(0, 1000, (m, l))
+p = 2**61-1
+
+a = np.random.randint(-2**25, 2**25, (n, m))
+b = np.random.randint(-2**25, 2**25, (m, l))
 c = a @ b
 
 zk_matrix = np.vectorize(SecretInt, otypes=[Wire])
 
 with PicoZKCompiler('picozk_test'):
-    zk_a = zk_matrix(a)
-    zk_b = zk_matrix(b)
+    zk_a = zk_matrix(a%p)
+    zk_b = zk_matrix(b%p)
 
     # Requires 70,000 multiplication gates
     # zk_c = zk_a @ zk_b
 
     # Requires 5136 multiplication gates
-    new_zk_c = zk_matrix(c)
-    u = np.random.randint(0, 1000, n)
-    v = np.random.randint(0, 1000, l)
+    new_zk_c = zk_matrix(c%p)
+    u = np.random.randint(0, p, n)
+    v = np.random.randint(0, p, l)
 
     mat1 = u @ zk_a @ zk_b @ v.T
     mat2 = u @ new_zk_c @ v.T
