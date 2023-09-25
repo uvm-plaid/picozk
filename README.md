@@ -50,11 +50,15 @@ compatible with the [SIEVE intermediate representation
 (IR)](https://stealthsoftwareinc.github.io/wizkit-blog/2021/09/20/introducing-the-sieve-ir.html) -
 for example, the [EMP Toolkit](https://github.com/emp-toolkit/emp-ir).
 
-## Licensing
+## Licensing and Acknowledgments
 
 PicoZK is made available under the MIT License.
 
-This material is based upon work supported by DARPA under Contract No.
-HR001120C0087. Any opinions, findings and conclusions or
-recommendations expressed in this material are those of the author(s)
-and do not necessarily reflect the views of DARPA.
+DISTRIBUTION A: Approved for Public Release. Distribution is
+Unlimited. This material is based upon work supported by DARPA under
+Contract No. HR001120C0087 and by the Broad Agency Announcement
+Program and the Cold Regions Research and Engineering Laboratory
+(ERDC-CRREL) under Contract W913E521C0003. Any opinions, findings and
+conclusions or recommendations expressed in this material are those of
+the author(s) and do not necessarily reflect the views of DARPA or
+ERDC-CRREL.
