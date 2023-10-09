@@ -6,7 +6,8 @@ Integrated, Efficient, and Extensible Zero-Knowledge Proof Engineering
 
 ## Installation
 
-Clone the repository and then install with `pip install`:
+Clone the repository and then install with `pip install` (This library
+requires Python3):
 
 ```
 git clone git@github.com:uvm-plaid/picozk.git
@@ -15,8 +16,9 @@ pip install .
 ```
 
 If you want to run the [examples](examples), you'll need to install
-some extra python libraries. These can be done by running `pip install
-.[examples]`.
+some extra python packages (which are optional and are not required to
+install the core library). These dependent packages can be done by
+running the command `pip install ".[examples]"`.
 
 
 ## Usage
@@ -27,7 +29,7 @@ statement. For example, the following program corresponds to a ZK
 statement that the prover knows a number `x` such that `x + x * x` is
 30:
 
-``` python
+```python
 from picozk import *
 
 with PicoZKCompiler('picozk_test'):

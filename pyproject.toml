@@ -10,21 +10,21 @@ authors = [{name = "Joe Near", email = "jnear@uvm.edu"}]
 version = "0.2"
 readme = "README.md"
 license = {text = "GPLv3"}
-requires-python = ">=3.10"
+requires-python = ">=3.10,<=3.11.5"
 
 [project.urls]
 Repository = "https://github.mit.edu/sieve-all/picozk.git"
 
 [project.optional-dependencies]
 examples = [
-     "ecdsa==0.18.0",
-     "galois==0.1.1",
-     "numpy==1.21.6",
-     "pandas==1.3.5",
-     "scipy==1.10.1",
-     "scikit-learn==1.2.0",
-     "torch==1.11.0",
-     "torchvision==0.12.0"]
+     "ecdsa>=0.18.0",
+     "galois>=0.3.5",
+     "numpy>=1.24.0",
+     "pandas>=1.3.5",
+     "scipy>=1.10.1",
+     "scikit-learn>=1.2.0",
+     "torch>=2.0.0",
+     "torchvision>=0.15.1"]
 
 [tool.setuptools]
 packages = ["picozk", "picozk.poseidon_hash"]
