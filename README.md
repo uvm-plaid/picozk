@@ -6,7 +6,13 @@ Integrated, Efficient, and Extensible Zero-Knowledge Proof Engineering
 
 ## Installation
 
-Clone the repository and then install with `pip install` (This library
+You can install the library directly from GitHub using `pip install`:
+
+```
+pip install git+https://github.com/uvm-plaid/picozk.git
+```
+
+Or, clone the repository and then install with `pip install` (This library
 requires Python3):
 
 ```
