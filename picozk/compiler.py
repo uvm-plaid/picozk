@@ -11,6 +11,12 @@ def SecretInt(x, field=None):
 def SecretBit(x):
     return config.cc.add_to_witness(x, 2)
 
+def PublicInt(x, field=None):
+    return config.cc.add_to_instance(x, field)
+
+def PublicBit(x):
+    return config.cc.add_to_instance(x, 2)
+
 def reveal(x):
     config.cc.emit_gate('assert_zero', (x + (-val_of(x))).wire, effect=True, field=x.field)
 
@@ -125,6 +131,25 @@ class PicoZKCompiler(object):
         else:
             return ArithmeticWire(r, x, field)
 
+    def add_to_instance(self, x, field):
+        if field == None:
+            field_type = 0
+            field = self.fields[field_type]
+        else:
+            field_type = self.fields.index(field)
+
+        x = int(x)
+        assert x % field == x
+
+        r = self.next_wire()
+        self.emit(f'  {r} <- @public({field_type});')
+        self.instance_files[field_type].write(f'  < {x} >;\n')
+
+        if field == 2:
+            return BinaryWire(r, x, 2)
+        else:
+            return ArithmeticWire(r, x, field)
+
     # TODO: this assumes the default arithmetic field
     # is there a way to fix it if that's wrong?
     @functools.cache
@@ -153,6 +178,17 @@ class PicoZKCompiler(object):
 
             f.write('version 2.0.0-beta;\n')
             f.write('private_input;\n')
+            f.write(f'@type field {field};\n')
+            f.write('@begin\n')
+
+        # Open the instance files: one per field
+        self.instance_files = []
+        for t, field in enumerate(self.fields):
+            f = open(self.file_prefix + f'.type{t}.ins', 'w')
+            self.instance_files.append(f)
+
+            f.write('version 2.0.0-beta;\n')
+            f.write('public_input;\n')
             f.write(f'@type field {field};\n')
             f.write('@begin\n')
 
@@ -195,21 +231,16 @@ class PicoZKCompiler(object):
             self.emit('    @plugin(ram_arith_v0, write);')
             self.emit()
 
-        for t, field in enumerate(self.fields):
-            f = open(self.file_prefix + f'.type{t}.ins', 'w')
-            f.write('version 2.0.0-beta;\n')
-            f.write('public_input;\n')
-            f.write(f'@type field {field};\n')
-            f.write('@begin\n')
-            f.write('@end\n')
-            f.close()
-
     def __exit__(self, exception_type, exception_value, traceback):
         config.cc = None
 
         self.emit('@end')
 
         for f in self.witness_files:
+            f.write('@end\n')
+            f.close()
+
+        for f in self.instance_files:
             f.write('@end\n')
             f.close()
 
