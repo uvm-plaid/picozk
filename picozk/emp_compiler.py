@@ -5,8 +5,46 @@ from picozk.wire import *
 from picozk.binary_int import BinaryInt
 from picozk import config
 from picozk.compiler import *
+import numpy as np
 
 # g++ -pthread -Wall -funroll-loops -Wno-ignored-attributes -Wno-unused-result -march=native -maes -mrdseed -std=c++11 -O3 picozk_test.cpp -lemp-zk -lemp-tool -lcrypto -o picozk_test
+
+
+class ZKArray:
+    def __init__(self, arr):
+        cc = config.cc
+        self.wire = cc.next_wire()
+        self.shape = arr.shape
+        self.val = arr
+        self.size = np.prod(self.shape)
+
+        # write the values to the witness file
+        l = lambda value: cc.witness_file.write(f'{value}\n')
+        np.vectorize(l, otypes=[None])(self.val)
+
+        # initialize the zk array
+        cc.emit(f'  // ARRAY INIT')
+        #cc.emit(f'  const uint64_t {self.wire}_size = {self.size};')
+        cc.emit(f'  std::vector<IntFp> {self.wire}({self.size});')
+        #cc.emit(f'  IntFp {self.wire} [{self.wire}_size];')
+        cc.emit(f'  for (unsigned int i = 0; i < {self.size}; i++) {{')
+        cc.emit(f'    witness >> wit_val;')
+        cc.emit(f'    {self.wire}[i] = IntFp(wit_val, ALICE);')
+        cc.emit(f'  }}')
+        cc.emit()
+
+    def sum(self):
+        cc = config.cc
+        out_wire = cc.next_wire()
+
+        cc.emit(f'  // SUM FUNCTION')
+        cc.emit(f'  IntFp {out_wire}(0, PUBLIC);')
+        cc.emit(f'  for (unsigned int i = 0; i < {self.size}; i++) {{')
+        cc.emit(f'    {out_wire} = {out_wire} + {self.wire}[i];')
+        cc.emit(f'  }}')
+        cc.emit()
+
+        return ArithmeticWire(out_wire, int(self.val.sum()), 2**61-1)
 
 class PicoZKEMPCompiler(PicoZKCompiler):
     def emit_call(self, call, *args):
@@ -102,11 +140,14 @@ const int threads = 1;
 
 void run_zk(BoolIO<NetIO> *ios[threads], int party) {
   std::cout << "starting ZK proof" << std::endl;
+  auto start = clock_start();
 
   std::fstream witness("picozk_test.wit", std::ios_base::in);
   uint64_t wit_val;
 
   setup_zk_arith<BoolIO<NetIO>>(ios, threads, party);
+  auto timesetup = time_from(start);
+  cout << "Setup time (s): " << timesetup / 1000 << endl;
 
 """
 
@@ -114,6 +155,8 @@ _emp_end = """
 
   finalize_zk_arith<BoolIO<NetIO>>();
   std::cout << "finished ZK proof" << std::endl;
+  auto timeuse = time_from(start);
+  cout << "Total time (s): " << timeuse / 1000 << endl;
 }
 
 int main(int argc, char **argv) {
