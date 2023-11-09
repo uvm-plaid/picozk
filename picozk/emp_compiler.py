@@ -10,41 +10,115 @@ import numpy as np
 # g++ -pthread -Wall -funroll-loops -Wno-ignored-attributes -Wno-unused-result -march=native -maes -mrdseed -std=c++11 -O3 picozk_test.cpp -lemp-zk -lemp-tool -lcrypto -o picozk_test
 
 
+@dataclass
 class ZKArray:
-    def __init__(self, arr):
-        cc = config.cc
-        self.wire = cc.next_wire()
-        self.shape = arr.shape
-        self.val = arr
+    wire: any
+    val: any
+
+    field = 2**61-1
+
+    def __init__(self, wire, val):
+        self.wire = wire
+        self.val = val
+        self.shape = val.shape
         self.size = np.prod(self.shape)
 
+    @classmethod
+    def encode(cls, arr, public=False):
+        party = 'PUBLIC' if public else 'ALICE'
+
+        cc = config.cc
+        wire = cc.next_wire()
+        size = np.prod(arr.shape)
+
         # write the values to the witness file
-        l = lambda value: cc.witness_file.write(f'{value}\n')
-        np.vectorize(l, otypes=[None])(self.val)
+        l = lambda value: cc.witness_file.write(f'{value % cls.field}\n')
+        np.vectorize(l, otypes=[None])(arr)
 
         # initialize the zk array
         cc.emit(f'  // ARRAY INIT')
-        #cc.emit(f'  const uint64_t {self.wire}_size = {self.size};')
-        cc.emit(f'  std::vector<IntFp> {self.wire}({self.size});')
-        #cc.emit(f'  IntFp {self.wire} [{self.wire}_size];')
-        cc.emit(f'  for (unsigned int i = 0; i < {self.size}; i++) {{')
+        cc.emit(f'  std::vector<IntFp> {wire}({size});')
+        cc.emit(f'  for (unsigned int i = 0; i < {size}; i++) {{')
         cc.emit(f'    witness >> wit_val;')
-        cc.emit(f'    {self.wire}[i] = IntFp(wit_val, ALICE);')
+        cc.emit(f'    {wire}[i] = IntFp(wit_val, {party});')
         cc.emit(f'  }}')
         cc.emit()
+
+        return ZKArray(wire, arr)
+
+    def __matmul__(self, other):
+        assert isinstance(other, ZKArray)
+        cc = config.cc
+
+        out = cc.next_wire()
+        out_val = self.val.astype(object) @ other.val.astype(object) % self.field
+        out_size = np.prod(out_val.shape)
+        rowsA, colsA = self.shape
+        rowsB, colsB = other.shape
+
+        cc.emit(f'  // MATRIX MULTIPLICATION')
+        cc.emit(f'  std::vector<IntFp> {out}({out_size});')
+        cc.emit(f'  for (int i = 0; i < {rowsA}; i++) {{')
+        cc.emit(f'    for (int j = 0; j < {colsB}; j++) {{')
+        cc.emit(f'      {out}[i * {colsB} + j] = IntFp(0, PUBLIC);')
+        cc.emit(f'      for (int k = 0; k < {colsA}; k++) {{')
+        cc.emit(f'        {out}[i * {colsB} + j] = {out}[i * {colsB} + j] + {self.wire}[i * {colsA} + k] * {other.wire}[k * {colsB} + j];')
+        cc.emit(f'      }}')
+        cc.emit(f'    }}')
+        cc.emit(f'  }}')
+
+        return ZKArray(out, out_val)
+
+    def map2(self, other, fun, fun_conc):
+        assert isinstance(other, ZKArray)
+        assert self.size == other.size
+
+        cc = config.cc
+        out = cc.next_wire()
+
+        a_w = ArithmeticWire(f'{self.wire}[i]', 0, self.field)
+        b_w = ArithmeticWire(f'{other.wire}[i]', 0, self.field)
+
+        cc.emit(f'  // MAP2 FUNCTION')
+        cc.emit(f'  std::vector<IntFp> {out}({self.size});')
+        cc.emit(f'  for (unsigned int i = 0; i < {self.size}; i++) {{')
+        result = fun(a_w, b_w)
+        cc.emit(f'  {out}[i] = {result.wire};')
+        cc.emit(f'  }}')
+        cc.emit()
+
+        out_v = fun_conc(self.val, other.val)
+
+        return ZKArray(out, out_v)
+
+    def __sub__(self, other):
+        return self.map2(other, lambda a, b: a - b, lambda a, b: a - b)
+
+    def __add__(self, other):
+        return self.map2(other, lambda a, b: a + b, lambda a, b: a + b)
+
+    def fold(self, fun, init, fun_conc):
+        cc = config.cc
+        accum = cc.next_wire()
+
+        v_w = ArithmeticWire(f'{self.wire}[i]', 0, self.field)
+        a_w = ArithmeticWire(accum, 0, self.field)
+
+        cc.emit(f'  // FOLD FUNCTION')
+        cc.emit(f'  IntFp {accum}({init}, PUBLIC);')
+        cc.emit(f'  for (unsigned int i = 0; i < {self.size}; i++) {{')
+        result = fun(v_w, a_w)
+        cc.emit(f'  {accum} = {result.wire};')
+        cc.emit(f'  }}')
+        cc.emit()
+
+        out_val = fun_conc(self.val)
+
+        return ArithmeticWire(accum, int(out_val), 2**61-1)
 
     def sum(self):
-        cc = config.cc
-        out_wire = cc.next_wire()
+        return self.fold(lambda x, a: x + a, 0, lambda x: x.sum(axis=0).sum(axis=0))
 
-        cc.emit(f'  // SUM FUNCTION')
-        cc.emit(f'  IntFp {out_wire}(0, PUBLIC);')
-        cc.emit(f'  for (unsigned int i = 0; i < {self.size}; i++) {{')
-        cc.emit(f'    {out_wire} = {out_wire} + {self.wire}[i];')
-        cc.emit(f'  }}')
-        cc.emit()
-
-        return ArithmeticWire(out_wire, int(self.val.sum()), 2**61-1)
 
 class PicoZKEMPCompiler(PicoZKCompiler):
     def emit_call(self, call, *args):
@@ -147,7 +221,7 @@ void run_zk(BoolIO<NetIO> *ios[threads], int party) {
 
   setup_zk_arith<BoolIO<NetIO>>(ios, threads, party);
   auto timesetup = time_from(start);
-  cout << "Setup time (s): " << timesetup / 1000 << endl;
+  cout << "Setup time (ms): " << timesetup / 1000 << endl;
 
 """
 
@@ -156,7 +230,7 @@ _emp_end = """
   finalize_zk_arith<BoolIO<NetIO>>();
   std::cout << "finished ZK proof" << std::endl;
   auto timeuse = time_from(start);
-  cout << "Total time (s): " << timeuse / 1000 << endl;
+  cout << "Total time (ms): " << timeuse / 1000 << endl;
 }
 
 int main(int argc, char **argv) {
