@@ -46,6 +46,54 @@ class ZKArray:
 
         return ZKArray(wire, arr)
 
+    def unfold(self, kernel, padding, stride, dilation):
+        cc = config.cc
+        print(kernel, padding, stride, dilation)
+
+        kernel_h, kernel_w = kernel
+        pad_h, pad_w = padding
+        stride_h, stride_w = stride
+        stride_h = max(1, stride_h)
+        stride_w = max(1, stride_w)
+        dilation_h, dilation_w = dilation
+
+        n, channels, height, width = self.shape
+
+        # cc.emit(f'static void THNN_(im2col)(const real* data_im, const int channels,')
+        # cc.emit(f'      const int height, const int width, const int kernel_h, const int kernel_w,')
+        # cc.emit(f'      const int pad_h, const int pad_w,')
+        # cc.emit(f'      const int stride_h, const int stride_w,')
+        # cc.emit(f'      const int dilation_h, const int dilation_w,')
+        # cc.emit(f'      real* data_col) {')
+
+        height_col = int((height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1)
+        width_col = int((width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1)
+        channels_col = channels * kernel_h * kernel_w
+        out_shape = (n, channels_col, height_col, width_col)
+        out_size = np.prod(out_shape)
+
+        out = cc.next_wire()
+        cc.emit(f'  // UNFOLD')
+        cc.emit(f'  std::vector<IntFp> {out}({out_size});')
+        cc.emit(f'  for (int c_col = 0; c_col < {channels_col}; ++c_col) {{')
+        cc.emit(f'    int w_offset = c_col % {kernel_w};')
+        cc.emit(f'    int h_offset = (c_col / {kernel_w}) % {kernel_h};')
+        cc.emit(f'    int c_im = c_col / {kernel_h} / {kernel_w};')
+        cc.emit(f'    for (int h_col = 0; h_col < {height_col}; ++h_col) {{')
+        cc.emit(f'      for (int w_col = 0; w_col < {width_col}; ++w_col) {{')
+        cc.emit(f'        int h_im = h_col * {stride_h} - {pad_h} + h_offset * {dilation_h};')
+        cc.emit(f'        int w_im = w_col * {stride_w} - {pad_w} + w_offset * {dilation_w};')
+        cc.emit(f'        {out}[(c_col * {height_col} + h_col) * {width_col} + w_col] =')
+        cc.emit(f'          (h_im >= 0 && w_im >= 0 && h_im < {height} && w_im < {width}) ?')
+        cc.emit(f'          {self.wire}[(c_im * {height} + h_im) * {width} + w_im] : pub_zero;')
+        cc.emit(f'      }}')
+        cc.emit(f'    }}')
+        cc.emit(f'  }}')
+
+        fake_shape = (1, out_size)
+        out_val = np.random.randint(-1000, 1000, fake_shape)
+        return ZKArray(out, out_val)
+
     def __matmul__(self, other):
         assert isinstance(other, ZKArray)
         cc = config.cc
@@ -223,6 +271,7 @@ void run_zk(BoolIO<NetIO> *ios[threads], int party) {
   auto timesetup = time_from(start);
   cout << "Setup time (ms): " << timesetup / 1000 << endl;
 
+  IntFp pub_zero(0, PUBLIC);
 """
 
 _emp_end = """
