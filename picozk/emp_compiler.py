@@ -48,7 +48,6 @@ class ZKArray:
 
     def unfold(self, kernel, padding, stride, dilation):
         cc = config.cc
-        print(kernel, padding, stride, dilation)
 
         kernel_h, kernel_w = kernel
         pad_h, pad_w = padding
@@ -90,7 +89,9 @@ class ZKArray:
         cc.emit(f'    }}')
         cc.emit(f'  }}')
 
-        fake_shape = (1, out_size)
+        last_dim = channels * kernel_h * kernel_w
+        first_dim = out_size // last_dim
+        fake_shape = (first_dim, last_dim)
         out_val = np.random.randint(-1000, 1000, fake_shape)
         return ZKArray(out, out_val)
 
@@ -99,7 +100,9 @@ class ZKArray:
         cc = config.cc
 
         out = cc.next_wire()
-        out_val = self.val.astype(object) @ other.val.astype(object) % self.field
+        a_p = self.val.astype(object) % self.field
+        b_p = other.val.astype(object) % self.field
+        out_val = (a_p @ b_p) % self.field
         out_size = np.prod(out_val.shape)
         rowsA, colsA = self.shape
         rowsB, colsB = other.shape
