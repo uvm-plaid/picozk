@@ -6,6 +6,7 @@ from picozk.binary_int import BinaryInt
 from picozk import config
 from picozk.compiler import *
 import numpy as np
+import galois
 
 # g++ -pthread -Wall -funroll-loops -Wno-ignored-attributes -Wno-unused-result -march=native -maes -mrdseed -std=c++11 -O3 picozk_test.cpp -lemp-zk -lemp-tool -lcrypto -o picozk_test
 
@@ -30,10 +31,14 @@ class ZKArray:
         cc = config.cc
         wire = cc.next_wire()
         size = np.prod(arr.shape)
+        #val = arr.astype(int).astype(object) % cls.field
+        val = galois.GF(cls.field)(arr)
 
         # write the values to the witness file
-        l = lambda value: cc.witness_file.write(f'{value % cls.field}\n')
-        np.vectorize(l, otypes=[None])(arr)
+        for x in arr.flatten():
+            cc.witness_file.write(f'{x%cls.field}\n')
+        # l = lambda value: cc.witness_file.write(f'{value}\n')
+        # np.vectorize(l, otypes=[None])(val)
 
         # initialize the zk array
         cc.emit(f'  // ARRAY INIT')
@@ -44,7 +49,16 @@ class ZKArray:
         cc.emit(f'  }}')
         cc.emit()
 
-        return ZKArray(wire, arr)
+        return ZKArray(wire, val)
+
+    def unroll_reveal(self, comment):
+        print('UNROLL REVEAL MIN', self.val.min(), self.val.max(), type(self.val[0][0]))
+        cc.emit(f'  // UNROLL REVEAL: {comment}')
+        m = self.val.flatten()
+        for i in range(min(100, self.size)):
+            #cc.emit(f'  assert({self.wire}[{i}].reveal() == {m[i] % self.field});')
+            cc.emit(f'  cout << {self.wire}[{i}].reveal() << ", " << {m[i] % self.field} << endl;')
+        cc.emit('  // UNROLL REVEAL DONE')
 
     def unfold(self, kernel, padding, stride, dilation):
         cc = config.cc
@@ -58,19 +72,26 @@ class ZKArray:
 
         n, channels, height, width = self.shape
 
-        # cc.emit(f'static void THNN_(im2col)(const real* data_im, const int channels,')
-        # cc.emit(f'      const int height, const int width, const int kernel_h, const int kernel_w,')
-        # cc.emit(f'      const int pad_h, const int pad_w,')
-        # cc.emit(f'      const int stride_h, const int stride_w,')
-        # cc.emit(f'      const int dilation_h, const int dilation_w,')
-        # cc.emit(f'      real* data_col) {')
-
         height_col = int((height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1)
         width_col = int((width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1)
         channels_col = channels * kernel_h * kernel_w
         out_shape = (n, channels_col, height_col, width_col)
         out_size = np.prod(out_shape)
 
+        # Val calculation
+        inp = self.val
+        input_padded = np.pad(inp, ((0, 0), (0, 0), (pad_h, pad_w), (pad_h, pad_w)), mode='constant')
+        s0, s1, s2, s3 = input_padded.strides
+        unfolded_shape = (inp.shape[0], height_col, width_col, channels, kernel_h, kernel_w)
+        unfolded_strides = (s0, stride_h * s2, stride_w * s3, s1, dilation_h * s2, dilation_w * s3)
+
+        unfolded_input = np.lib.stride_tricks.as_strided(input_padded,
+                                                         shape=unfolded_shape,
+                                                         strides=unfolded_strides)
+        out_val = unfolded_input.reshape(-1, channels * kernel_h * kernel_w).astype(int).astype(object).T
+        print('out val shape:', out_val.shape)
+
+        # EMP output
         out = cc.next_wire()
         cc.emit(f'  // UNFOLD')
         cc.emit(f'  std::vector<IntFp> {out}({out_size});')
@@ -92,17 +113,40 @@ class ZKArray:
         last_dim = channels * kernel_h * kernel_w
         first_dim = out_size // last_dim
         fake_shape = (first_dim, last_dim)
-        out_val = np.random.randint(-1000, 1000, fake_shape)
-        return ZKArray(out, out_val)
+        print('UNFOLD:', fake_shape, out_val.shape)
+        za = ZKArray(out, out_val)
+        #za.unroll_reveal('za')
+        #1/0
+        return za
+
+    def T(self):
+        cc = config.cc
+
+        rows, cols = self.shape
+        out_size = self.size
+
+        out = cc.next_wire()
+        cc.emit(f'  // TRANSPOSE')
+        cc.emit(f'  std::vector<IntFp> {out}({out_size});')
+        cc.emit(f'  for (int i = 0; i < {rows}; ++i) {{')
+        cc.emit(f'    for (int j = 0; j < {cols}; ++j) {{')
+        cc.emit(f'      {out}[j * {rows} + i] = {self.wire}[i * {cols} + j];')
+        cc.emit(f'    }}')
+        cc.emit(f'  }}')
+
+        return ZKArray(out, self.val.T)
 
     def __matmul__(self, other):
         assert isinstance(other, ZKArray)
         cc = config.cc
 
+        a_p = self.val#.astype(object) % self.field
+        b_p = other.val#.astype(object) % self.field
+        #print('types', type(a_p[0][0]), type(b_p[0][0]))
+
         out = cc.next_wire()
-        a_p = self.val.astype(object) % self.field
-        b_p = other.val.astype(object) % self.field
-        out_val = (a_p @ b_p) % self.field
+        out_val = (a_p @ b_p)# % self.field
+
         out_size = np.prod(out_val.shape)
         rowsA, colsA = self.shape
         rowsB, colsB = other.shape
@@ -135,6 +179,7 @@ class ZKArray:
         cc.emit(f'  for (unsigned int i = 0; i < {self.size}; i++) {{')
         result = fun(a_w, b_w)
         cc.emit(f'  {out}[i] = {result.wire};')
+        #cc.emit(f'  cout << {result.wire}.reveal() << " ";')
         cc.emit(f'  }}')
         cc.emit()
 
@@ -169,6 +214,9 @@ class ZKArray:
 
     def sum(self):
         return self.fold(lambda x, a: x + a, 0, lambda x: x.sum(axis=0).sum(axis=0))
+
+    def prod(self):
+        return self.fold(lambda x, a: x * a, 1, lambda x: x.prod(axis=0).prod(axis=0))
 
 
 class PicoZKEMPCompiler(PicoZKCompiler):
