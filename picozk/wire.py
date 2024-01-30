@@ -171,6 +171,8 @@ class ArithmeticWire(Wire):
         wire_names = config.cc.allocate(len(bits))
         config.cc.emit(f'  {config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]} <- @convert({field_type}: {self.wire});')
         wires = [BinaryWire(name, val, 2) for name, val in zip(wire_names, bits)]
+
+        config.cc.stats[field_type]['convert'] += 1
         return BinaryInt(wires)
 
 @dataclass(unsafe_hash=True)
@@ -197,6 +199,8 @@ class BinaryWire(Wire):
         r = config.cc.next_wire()
 
         config.cc.emit(f'  {field_type}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
+
+        config.cc.stats[field_type]['convert'] += 1
 
         return BooleanWire(r, self.val, field)
 

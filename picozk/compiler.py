@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 from typing import List
+from collections import defaultdict
+
 import functools
 from picozk.wire import *
 from picozk.binary_int import BinaryInt
@@ -73,6 +75,8 @@ class PicoZKCompiler(object):
         self.BINARY_TYPE = len(self.fields) - 1 # binary type is the last field
         self.RAM_TYPE = len(self.fields)        # RAM type is the one after that
 
+        self.stats = {t: defaultdict(int) for t in range(len(self.fields))}
+
     def emit(self, s=''):
         self.relation_file.write(s)
         self.relation_file.write('\n')
@@ -96,6 +100,8 @@ class PicoZKCompiler(object):
             type_arg = 0
         else:
             type_arg = self.fields.index(field)
+
+        self.stats[type_arg][gate] += 1
 
         args_str = ', '.join([str(a) for a in args])
         if effect:
@@ -246,3 +252,15 @@ class PicoZKCompiler(object):
 
         self.relation_file.close()
 
+        self.print_stats()
+
+    def print_stats(self):
+        print('**************************************************')
+        print(' Profiler results')
+        print('**************************************************')
+
+        for t, vs in self.stats.items():
+            print(f'Field {self.fields[t]} (type {t}):')
+            for k, v in vs.items():
+                print(f'  {k}: {v}')
+            print()
