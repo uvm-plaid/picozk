@@ -26,6 +26,13 @@ def assert0(x):
 
     config.cc.emit_gate('assert_zero', x.wire, effect=True, field=x.field)
 
+def assert_eq(x, y):
+    assert x.field == y.field
+    if val_of(x) != val_of(y):
+        print("x != y", x, y)
+
+    config.cc.emit_gate('assert_zero', (x - y).wire, effect=True, field=x.field)
+
 def mux(a, b, c):
     if isinstance(a, int):
         return b if a else c
@@ -201,6 +208,9 @@ class PicoZKCompiler(object):
         if 'ram' in self.options:
             self.emit(f'@plugin ram_arith_v0;')
 
+        if 'div' in self.options:
+            self.emit(f'@plugin extended_arithmetic_v1;')
+
         for field in self.fields:
             self.emit(f'@type field {field};')
 
@@ -230,6 +240,15 @@ class PicoZKCompiler(object):
             self.emit(f'  @function(write_ram, @in: {self.RAM_TYPE}:1, 0:1, 0:1)')
             self.emit('    @plugin(ram_arith_v0, write);')
             self.emit()
+
+        if 'div' in self.options:
+            self.emit(f'  // plugin function signature for division')
+            self.emit(f'  @function(plugin_div, @out: 0:1, 0:1, @in: 0:1, 0:1)')
+            self.emit(f'    @plugin(extended_arithmetic_v1, division);')
+            self.emit(f'  // wrapper for division without modulus')
+            self.emit(f'  @function(div, @out: 0:1, @in: 0:1, 0:1)')
+            self.emit(f'    $0, $3 <- @call(plugin_div, $1, $2);')
+            self.emit(f'  @end')
 
     def __exit__(self, exception_type, exception_value, traceback):
         config.cc = None

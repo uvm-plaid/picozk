@@ -151,6 +151,12 @@ class ArithmeticWire(Wire):
             assert p == self.field
         return exp_by_squaring(self, other)
 
+    def __floordiv__(self, other):
+        assert val_of(other) != 0
+        r = config.cc.emit_call('div', wire_of(self), wire_of(other))
+        return ArithmeticWire( \
+            r, (val_of(self) // val_of(other)) % self.field, self.field)
+
     def __mod__(self, other):
         assert isinstance(other, int)
         if other == self.field:
