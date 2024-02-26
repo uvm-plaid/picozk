@@ -1,13 +1,14 @@
 [build-system]
 
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "PicoZK"
+name = "picozk"
 description = "PicoZK library & compiler for writing zero-knowledge statements"
 authors = [{name = "Joe Near", email = "jnear@uvm.edu"}]
 version = "0.3"
-readme = {file = "README.md"}
+readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10,<=3.11.7"
 
