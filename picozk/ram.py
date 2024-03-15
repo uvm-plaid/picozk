@@ -17,10 +17,16 @@ class ZKRAM:
         self.val = [0 for _ in range(size)]
 
     def write(self, idx, val):
+        if val_of(idx) < 0 or val_of(idx) >= self.size:
+            raise IndexError(f'Index {val_of(idx)} out of range')
+
         self.cc.emit(f'  @call(write_ram, {self.wire}, {wire_of(idx)}, {wire_of(val)});')
         self.val[val_of(idx)] = val_of(val)
 
     def read(self, idx):
+        if val_of(idx) < 0 or val_of(idx) >= self.size:
+            raise IndexError(f'Index {val_of(idx)} out of range')
+
         r = self.cc.next_wire()
         self.cc.emit(f'  {r} <- @call(read_ram, {self.wire}, {wire_of(idx)});')
         return ArithmeticWire(r, self.val[val_of(idx)], self.cc.fields[0])
