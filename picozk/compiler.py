@@ -39,7 +39,7 @@ def mux(a, b, c):
     elif isinstance(a, BooleanWire) and \
          isinstance(b, (int, ArithmeticWire)) and \
          isinstance(c, (int, ArithmeticWire)):
-        return a.to_arith() * b + (~a).to_arith() * c
+        return a.if_else(b, c)
     else:
         raise Exception('unknown types for mux:', a, b, c)
 
@@ -47,7 +47,7 @@ def mux_bool(a, b, c):
     if isinstance(a, int):
         return b if a else c
     elif isinstance(a, BooleanWire):
-        return a * b + (~a) * c
+        return a.if_else(b, c)
     else:
         raise Exception('unknown types for mux_bool:', a, b, c)
 

@@ -88,7 +88,7 @@ class BooleanWire(Wire):
     __rand__ = __and__
 
     def __or__(self, other):
-        return (self * other) + (self * (~other)) + ((~self) * other)
+        return (l * r) * (self.field - 1) + (l + r)
     __ror__ = __or__
 
     def __invert__(self):
