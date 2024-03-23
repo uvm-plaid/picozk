@@ -104,9 +104,6 @@ class BooleanWire(Wire):
     def if_else(self, then_val, else_val):
         return else_val + self.to_arith() * (then_val - else_val)
 
-    def if_else_bool(self, then_val, else_val):
-        return else_val + self * (then_val - else_val)
-
 @dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
     def __neg__(self):
