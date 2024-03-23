@@ -121,7 +121,12 @@ class ArithmeticWire(Wire):
     __req__ = __eq__
 
     def is_negative(self):
-        return self.to_binary().is_negative().to_bool()
+        if config.cc.no_convert_is_neg:
+            field_idx = config.cc.fields.index(self.field)
+            r = config.cc.emit_call(f'is_neg_{field_idx}', wire_of(self))
+            return BooleanWire(r, util.encode_int(self.val, self.field)[0], self.field)
+        else:
+            return self.to_binary().is_negative().to_bool()
 
     def __lt__(self, other):
         return (self - other).is_negative()
@@ -153,7 +158,8 @@ class ArithmeticWire(Wire):
 
     def __floordiv__(self, other):
         assert val_of(other) != 0
-        r = config.cc.emit_call('div', wire_of(self), wire_of(other))
+        field_idx = config.cc.fields.index(self.field)
+        r = config.cc.emit_call(f'div_{field_idx}', wire_of(self), wire_of(other))
         return ArithmeticWire( \
             r, (val_of(self) // val_of(other)) % self.field, self.field)
 

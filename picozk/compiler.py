@@ -80,6 +80,8 @@ class PicoZKCompiler(object):
         self.BINARY_TYPE = len(self.fields) - 1 # binary type is the last field
         self.RAM_TYPE = len(self.fields)        # RAM type is the one after that
 
+        self.no_convert_is_neg = False
+
     def emit(self, s=''):
         self.relation_file.write(s)
         self.relation_file.write('\n')
@@ -242,13 +244,25 @@ class PicoZKCompiler(object):
             self.emit()
 
         if 'div' in self.options:
-            self.emit(f'  // plugin function signature for division')
-            self.emit(f'  @function(plugin_div, @out: 0:1, 0:1, @in: 0:1, 0:1)')
-            self.emit(f'    @plugin(extended_arithmetic_v1, division);')
-            self.emit(f'  // wrapper for division without modulus')
-            self.emit(f'  @function(div, @out: 0:1, @in: 0:1, 0:1)')
-            self.emit(f'    $0, $3 <- @call(plugin_div, $1, $2);')
-            self.emit(f'  @end')
+            for t, field in enumerate(self.fields):
+                if field != 2:
+                    self.emit(f'  // plugin function signature for division')
+                    self.emit(f'  @function(plugin_div_{t}, @out: {t}:1, {t}:1, @in: {t}:1, {t}:1)')
+                    self.emit(f'    @plugin(extended_arithmetic_v1, division);')
+                    self.emit(f'  // wrapper for division without modulus')
+                    self.emit(f'  @function(div_{t}, @out: {t}:1, @in: {t}:1, {t}:1)')
+                    self.emit(f'    $0, $3 <- @call(plugin_div_{t}, $1, $2);')
+                    self.emit(f'  @end')
+
+                    self.no_convert_is_neg = True
+                    bits_per_fe = util.get_bits_for_field(self.fields[t])
+                    self.emit(f'  // plugin function for bit decomposition')
+                    self.emit(f'  @function(plugin_decomp_{t}, @out: {t}:{bits_per_fe}, @in: {t}:1)')
+                    self.emit(f'    @plugin(extended_arithmetic_v1, bit_decompose);')
+                    self.emit(f'  @function(is_neg_{t}, @out: {t}:1, @in: {t}:1)')
+                    self.emit(f'    $2...${1 + bits_per_fe} <- @call(plugin_decomp_{t}, $1);')
+                    self.emit(f'    $0 <- {t}:$2;')
+                    self.emit(f'  @end')
 
     def __exit__(self, exception_type, exception_value, traceback):
         config.cc = None
