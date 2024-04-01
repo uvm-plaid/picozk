@@ -9,7 +9,7 @@ description = "PicoZK library & compiler for writing zero-knowledge statements"
 authors = [{name = "Joe Near", email = "jnear@uvm.edu"}]
 version = "0.3"
 readme = "README.md"
-license = {text = "GPLv3"}
+license = {file = "LICENSE"}
 requires-python = ">=3.9,<=3.11.7"
 
 [project.urls]
