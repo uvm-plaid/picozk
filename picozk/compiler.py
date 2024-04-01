@@ -26,13 +26,20 @@ def assert0(x):
 
     config.cc.emit_gate('assert_zero', x.wire, effect=True, field=x.field)
 
+def assert_eq(x, y):
+    assert x.field == y.field
+    if val_of(x) != val_of(y):
+        print("x != y", x, y)
+
+    config.cc.emit_gate('assert_zero', (x - y).wire, effect=True, field=x.field)
+
 def mux(a, b, c):
     if isinstance(a, int):
         return b if a else c
     elif isinstance(a, BooleanWire) and \
          isinstance(b, (int, ArithmeticWire)) and \
          isinstance(c, (int, ArithmeticWire)):
-        return a.to_arith() * b + (~a).to_arith() * c
+        return a.if_else(b, c)
     else:
         raise Exception('unknown types for mux:', a, b, c)
 
@@ -72,6 +79,8 @@ class PicoZKCompiler(object):
         self.fields.append(2)                   # add the binary field
         self.BINARY_TYPE = len(self.fields) - 1 # binary type is the last field
         self.RAM_TYPE = len(self.fields)        # RAM type is the one after that
+
+        self.no_convert_is_neg = False
 
     def emit(self, s=''):
         self.relation_file.write(s)
@@ -201,6 +210,9 @@ class PicoZKCompiler(object):
         if 'ram' in self.options:
             self.emit(f'@plugin ram_arith_v0;')
 
+        if 'div' in self.options:
+            self.emit(f'@plugin extended_arithmetic_v1;')
+
         for field in self.fields:
             self.emit(f'@type field {field};')
 
@@ -230,6 +242,27 @@ class PicoZKCompiler(object):
             self.emit(f'  @function(write_ram, @in: {self.RAM_TYPE}:1, 0:1, 0:1)')
             self.emit('    @plugin(ram_arith_v0, write);')
             self.emit()
+
+        if 'div' in self.options:
+            for t, field in enumerate(self.fields):
+                if field != 2:
+                    self.emit(f'  // plugin function signature for division')
+                    self.emit(f'  @function(plugin_div_{t}, @out: {t}:1, {t}:1, @in: {t}:1, {t}:1)')
+                    self.emit(f'    @plugin(extended_arithmetic_v1, division);')
+                    self.emit(f'  // wrapper for division without modulus')
+                    self.emit(f'  @function(div_{t}, @out: {t}:1, @in: {t}:1, {t}:1)')
+                    self.emit(f'    $0, $3 <- @call(plugin_div_{t}, $1, $2);')
+                    self.emit(f'  @end')
+
+                    self.no_convert_is_neg = True
+                    bits_per_fe = util.get_bits_for_field(self.fields[t])
+                    self.emit(f'  // plugin function for bit decomposition')
+                    self.emit(f'  @function(plugin_decomp_{t}, @out: {t}:{bits_per_fe}, @in: {t}:1)')
+                    self.emit(f'    @plugin(extended_arithmetic_v1, bit_decompose);')
+                    self.emit(f'  @function(is_neg_{t}, @out: {t}:1, @in: {t}:1)')
+                    self.emit(f'    $2...${1 + bits_per_fe} <- @call(plugin_decomp_{t}, $1);')
+                    self.emit(f'    $0 <- {t}:$2;')
+                    self.emit(f'  @end')
 
     def __exit__(self, exception_type, exception_value, traceback):
         config.cc = None

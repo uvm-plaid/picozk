@@ -88,7 +88,7 @@ class BooleanWire(Wire):
     __rand__ = __and__
 
     def __or__(self, other):
-        return (self * other) + (self * (~other)) + ((~self) * other)
+        return (l * r) * (self.field - 1) + (l + r)
     __ror__ = __or__
 
     def __invert__(self):
@@ -121,7 +121,12 @@ class ArithmeticWire(Wire):
     __req__ = __eq__
 
     def is_negative(self):
-        return self.to_binary().is_negative().to_bool()
+        if config.cc.no_convert_is_neg:
+            field_idx = config.cc.fields.index(self.field)
+            r = config.cc.emit_call(f'is_neg_{field_idx}', wire_of(self))
+            return BooleanWire(r, util.encode_int(self.val, self.field)[0], self.field)
+        else:
+            return self.to_binary().is_negative().to_bool()
 
     def __lt__(self, other):
         return (self - other).is_negative()
@@ -150,6 +155,13 @@ class ArithmeticWire(Wire):
         if p != None:
             assert p == self.field
         return exp_by_squaring(self, other)
+
+    def __floordiv__(self, other):
+        assert val_of(other) != 0
+        field_idx = config.cc.fields.index(self.field)
+        r = config.cc.emit_call(f'div_{field_idx}', wire_of(self), wire_of(other))
+        return ArithmeticWire( \
+            r, (val_of(self) // val_of(other)) % self.field, self.field)
 
     def __mod__(self, other):
         assert isinstance(other, int)
