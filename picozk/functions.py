@@ -14,6 +14,8 @@ except ImportError:
 def picozk_function(func):
     name = util.gensym('func')
     needs_compiling = True
+    num_input_wires = None
+    num_output_wires = None
 
     def _extract_wires(v):
         if isinstance(v, Wire):
@@ -58,6 +60,8 @@ def picozk_function(func):
         cc = config.cc
         # get the input wires
         input_wire_wires = [w.wire for w in _extract_wires(args)]
+        assert len(input_wire_wires) == num_input_wires, \
+               f'Function expected {num_input_wires} input wires, got {len(input_wire_wires)}'
         input_wires = ', '.join(input_wire_wires)
 
         # set up the compiler
@@ -80,6 +84,8 @@ def picozk_function(func):
         context_map = {}
         output_value = _freshen_wires(output, context_map)
         output_wires = [w.wire for w in context_map.values()]
+        assert len(output_wires) == num_output_wires, \
+               f'Function expected {num_output_wires} input wires, got {len(output_wires)}'
         output_spec = ', '.join(output_wires)
 
         call_spec = [name]
@@ -95,6 +101,9 @@ def picozk_function(func):
         return output_value
 
     def _compile_function(args):
+        nonlocal num_input_wires
+        nonlocal num_output_wires
+
         # set up the compiler to compile a function
         cc = config.cc
         old_current_wire = cc.current_wire
@@ -107,6 +116,7 @@ def picozk_function(func):
         # find wires in the inputs
         input_map = {}
         inputs = _freshen_wires(args, input_map)
+        num_input_wires = len(inputs)
 
         # replace input wires with fresh numbers
         saved_input_wires = []
@@ -125,6 +135,8 @@ def picozk_function(func):
         output_map = {}
         cc.current_wire = 0
         extracted_output = _freshen_wires(output, output_map)
+        num_output_wires = len(extracted_output) if extracted_output else None
+
         for old, new in output_map.items():
             t = cc.fields.index(old.field)
             cc.emit(f'  {new.wire} <- {t}:{old.wire};')
