@@ -135,7 +135,7 @@ def picozk_function(func):
         output_map = {}
         cc.current_wire = 0
         extracted_output = _freshen_wires(output, output_map)
-        num_output_wires = len(output_map) if extracted_output else 0
+        num_output_wires = len(output_map) if extracted_output is not None else 0
 
         for old, new in output_map.items():
             t = cc.fields.index(old.field)
