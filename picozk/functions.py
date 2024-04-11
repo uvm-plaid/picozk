@@ -85,7 +85,7 @@ def picozk_function(func):
         output_value = _freshen_wires(output, context_map)
         output_wires = [w.wire for w in context_map.values()]
         assert len(output_wires) == num_output_wires, \
-               f'Function expected {num_output_wires} input wires, got {len(output_wires)}'
+               f'Function expected {num_output_wires} output wires, got {len(output_wires)}'
         output_spec = ', '.join(output_wires)
 
         call_spec = [name]
@@ -116,7 +116,7 @@ def picozk_function(func):
         # find wires in the inputs
         input_map = {}
         inputs = _freshen_wires(args, input_map)
-        num_input_wires = len(inputs)
+        num_input_wires = len(input_map)
 
         # replace input wires with fresh numbers
         saved_input_wires = []
@@ -135,7 +135,7 @@ def picozk_function(func):
         output_map = {}
         cc.current_wire = 0
         extracted_output = _freshen_wires(output, output_map)
-        num_output_wires = len(extracted_output) if extracted_output else None
+        num_output_wires = len(output_map) if extracted_output else 0
 
         for old, new in output_map.items():
             t = cc.fields.index(old.field)
