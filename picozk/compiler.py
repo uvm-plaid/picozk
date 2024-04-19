@@ -185,7 +185,7 @@ class PicoZKCompiler(object):
             f = open(self.file_prefix + f'.type{t}.wit', 'w')
             self.witness_files.append(f)
 
-            f.write('version 2.0.0-beta;\n')
+            f.write('version 2.2.0;\n')
             f.write('private_input;\n')
             f.write(f'@type field {field};\n')
             f.write('@begin\n')
@@ -196,14 +196,14 @@ class PicoZKCompiler(object):
             f = open(self.file_prefix + f'.type{t}.ins', 'w')
             self.instance_files.append(f)
 
-            f.write('version 2.0.0-beta;\n')
+            f.write('version 2.2.0;\n')
             f.write('public_input;\n')
             f.write(f'@type field {field};\n')
             f.write('@begin\n')
 
         self.relation_file = open(self.file_prefix + '.rel', 'w')
 
-        self.emit('version 2.0.0-beta;')
+        self.emit('version 2.2.0;')
         self.emit('circuit;')
         self.emit('@plugin mux_v0;')
 
