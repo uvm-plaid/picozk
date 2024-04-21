@@ -11,30 +11,6 @@ from picozk.functions import picozk_function
 def dot(v, m):
     return [sum([a + b for a, b in zip(v, r)]) for r in m]
 
-def abs_fn(xs: List[Wire]) -> (List[str], List[int]):
-    return [wire_of(x) for x in xs], [val_of(x) for x in xs]
-
-def conc_fn(wires: List[str], vals: List[int]) -> List[Wire]:
-    p = 2**61-1
-    return [ArithmeticWire(w, v%p, p) for w, v in zip(wires, vals)]
-
-def conc_in(wires, args):
-    w_in1, w_in2 = wires
-    obj, in1, in2 = args
-
-    a_in1 = conc_fn(w_in1, in1)
-    a_in2 = conc_fn(w_in2, in2)
-
-    return (obj, a_in1, a_in2)
-
-def abs_in(args):
-    obj, in1, in2 = args
-
-    wires1, vals1 = abs_fn(in1)
-    wires2, vals2 = abs_fn(in2)
-
-    return [wires1, wires2], (obj, vals1, vals2)
-
 class PoseidonHash:
     def __init__(self, p, alpha, input_rate, t=None, security_level = 128):
         self.p = p
@@ -96,10 +72,6 @@ class PoseidonHash:
 
             self.state = dot(self.state, self.mds_matrix)
 
-
-    # @picozk_function(abs_fns  = [abs_in, abs_fn],
-    #                  conc_fns = [conc_in, conc_fn],
-    #                  in_wires = [3, 3], out_wires=3)
     def hash_block(self, input_block, current_state):
         assert len(input_block) == self.t
         self.rc_counter = 0
@@ -120,3 +92,37 @@ class PoseidonHash:
             self.state = self.hash_block(b, self.state)
 
         return self.state[1]
+
+class BufferedPoseidonHash:
+    def __init__(self, p, alpha, input_rate, t=None, security_level = 128):
+        self.hash_func = PoseidonHash(p, alpha, input_rate, t, security_level)
+        self.buf = []
+        self.hash_func.state = [PublicInt(0) for s in self.hash_func.state]
+
+    def hash(self, input_vec):
+        for x in input_vec:
+            assert isinstance(x, Wire), f'All inputs to hash_compact must be wires'
+
+        self.buf.extend(input_vec)
+        t = self.hash_func.t
+
+        while len(self.buf) >= t:
+            self.hash_block(self.buf[:t])
+            self.buf = self.buf[t:]
+
+    @picozk_function
+    def _do_hash(self, input_block, current_state):
+        return self.hash_func.hash_block(input_block, current_state)
+
+    def hash_block(self, block):
+        self.hash_func.state = self._do_hash(block, self.hash_func.state)
+
+    def get_digest(self):
+        if len(self.buf) > 0:
+            t = self.hash_func.t
+            assert len(self.buf) < t
+
+            padding = [PublicInt(0) for _ in range(t - (len(self.buf) % t))]
+            self.hash(padding)
+
+        return self.hash_func.state[1]

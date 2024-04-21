@@ -1,1 +1,1 @@
-from .poseidon_hash import PoseidonHash
+from .poseidon_hash import PoseidonHash, BufferedPoseidonHash

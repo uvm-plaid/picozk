@@ -1,5 +1,6 @@
 from picozk import *
 from picozk import util
+from picozk.functions import picozk_function
 
 _k = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
       0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -31,7 +32,7 @@ class ZKSHA256:
     def ch(self, x, y, z):
         return (x & y) ^ ((~x) & z)
 
-    def compress(self, chunk):
+    def compress(self, chunk, _h):
         w = [BinaryInt([0 for _ in range(32)]) for _ in range(64)]
         w[0:15] = chunk
 
@@ -40,7 +41,7 @@ class ZKSHA256:
             s1 = w[i-2].rotr(17) ^ w[i-2].rotr(19) ^ (w[i-2] >> 10)
             w[i] = (w[i-16] + s0 + w[i-7] + s1)
 
-        a, b, c, d, e, f, g, h = self._h
+        a, b, c, d, e, f, g, h = _h
         k = [BinaryInt(util.encode_int(x, 2**32)) for x in _k]
 
         for i in range(64):
@@ -58,8 +59,8 @@ class ZKSHA256:
             b = a
             a = (t1 + t2)
 
-        for i, (x, y) in enumerate(zip(self._h, [a, b, c, d, e, f, g, h])):
-            self._h[i] = (x + y)
+        new_h = [x+y for x,y in zip(_h, [a, b, c, d, e, f, g, h])]
+        return new_h
 
     def hash(self, msg):
         padding_amount = 512 - ((len(msg) + 1 + 64) % 512)
@@ -68,5 +69,44 @@ class ZKSHA256:
         chunks = [padded_msg[i:i+512] for i in range(0, len(padded_msg), 512)]
         chunk_words = [[BinaryInt(chunk[i:i+32]) for i in range(0, len(chunk), 32)] for chunk in chunks]
         for chunk in chunk_words:
-            self.compress(chunk)
+            self._h = self.compress(chunk, self._h)
         return self._h
+
+class BufferedZKSHA256:
+    def __init__(self):
+        self.hash_func = ZKSHA256()
+        self.buf = []
+        self.hash_func._h = [BinaryInt([PublicBit(b) for b in x.wires]) for x in self.hash_func._h]
+        self.total_len = 0
+
+    def hash(self, input_vec):
+        for x in input_vec:
+            assert isinstance(x, Wire), f'All inputs to hash_compact must be wires'
+
+        self.buf.extend(input_vec)
+        self.total_len += len(input_vec)
+        t = 512
+
+        while len(self.buf) >= t:
+            chunk = self.buf[:t]
+            print('hashing', len(input_vec), 'buf', len(self.buf), 'chunk', len(chunk))
+            chunk_words = [BinaryInt(chunk[i:i+32]) for i in range(0, len(chunk), 32)]
+            self.hash_block(chunk_words)
+            self.buf = self.buf[t:]
+
+    @picozk_function
+    def _do_hash(self, input_block, current_state):
+        return self.hash_func.compress(input_block, current_state)
+
+    def hash_block(self, block):
+        self.hash_func._h = self._do_hash(block, self.hash_func._h)
+
+    def get_digest(self):
+        print('digest time, buf has', len(self.buf))
+        padding_amount = 512 - ((len(self.buf) + 1 + 64) % 512)
+        len_bits = [PublicBit(b) for b in util.encode_int(self.total_len, 2**64)]
+        padded_msg = [PublicBit(1)] + [PublicBit(0) for _ in range(padding_amount)] + len_bits
+        assert (len(padded_msg)+len(self.buf)) % 512 == 0
+        self.hash(padded_msg)
+
+        return self.hash_func._h

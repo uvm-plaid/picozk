@@ -32,6 +32,10 @@ def picozk_function(func):
             return []
         elif v is None:
             return []
+        elif str(type(v)) == "<class 'picozk.sha256.BufferedZKSHA256'>":
+            return []
+        elif str(type(v)) == "<class 'picozk.poseidon_hash.poseidon_hash.BufferedPoseidonHash'>":
+            return []
         else:
             raise Exception('unsupported type:', type(v), v)
 
@@ -53,8 +57,12 @@ def picozk_function(func):
             return v
         elif v is None:
             return None
+        elif str(type(v)) == "<class 'picozk.sha256.BufferedZKSHA256'>":
+            return v
+        elif str(type(v)) == "<class 'picozk.poseidon_hash.poseidon_hash.BufferedPoseidonHash'>":
+            return v
         else:
-            raise Exception('unsupported type:', type(v), v)
+            raise Exception('unsupported type:', str(type(v)), v)
 
     def _run_function(args):
         cc = config.cc
@@ -66,7 +74,7 @@ def picozk_function(func):
 
         # set up the compiler
         old_current_wire = cc.current_wire
-        cc.current_wire = 1000
+        cc.current_wire = 5000
         cc.constant_wire.cache_clear()
         old_relation_file = cc.relation_file
         buf = StringIO("")
@@ -107,7 +115,7 @@ def picozk_function(func):
         # set up the compiler to compile a function
         cc = config.cc
         old_current_wire = cc.current_wire
-        cc.current_wire = 1000
+        cc.current_wire = 5000
         cc.constant_wire.cache_clear()
         old_relation_file = cc.relation_file
         buf = StringIO("")
