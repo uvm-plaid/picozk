@@ -89,7 +89,6 @@ class BufferedZKSHA256:
 
         while len(self.buf) >= t:
             chunk = self.buf[:t]
-            print('hashing', len(input_vec), 'buf', len(self.buf), 'chunk', len(chunk))
             chunk_words = [BinaryInt(chunk[i:i+32]) for i in range(0, len(chunk), 32)]
             self.hash_block(chunk_words)
             self.buf = self.buf[t:]
@@ -102,7 +101,6 @@ class BufferedZKSHA256:
         self.hash_func._h = self._do_hash(block, self.hash_func._h)
 
     def get_digest(self):
-        print('digest time, buf has', len(self.buf))
         padding_amount = 512 - ((len(self.buf) + 1 + 64) % 512)
         len_bits = [PublicBit(b) for b in util.encode_int(self.total_len, 2**64)]
         padded_msg = [PublicBit(1)] + [PublicBit(0) for _ in range(padding_amount)] + len_bits

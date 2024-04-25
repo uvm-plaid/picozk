@@ -99,30 +99,33 @@ class PicoZKCompiler(object):
 
     def emit_call(self, call, *args):
         if self.relation_file is None:
-            return
-
-        args_str = ', '.join([str(a) for a in args])
-        r = self.next_wire()
-        self.emit(f'  {r} <- @call({call}, {args_str});')
-        return r
+            return self.next_wire()
+        else:
+            args_str = ', '.join([str(a) for a in args])
+            r = self.next_wire()
+            self.emit(f'  {r} <- @call({call}, {args_str});')
+            return r
 
     def emit_gate(self, gate, *args, effect=False, field=None):
         if self.relation_file is None:
-            return
-
-        if field is None:
-            type_arg = 0
+            if effect:
+                return
+            else:
+                return self.next_wire()
         else:
-            type_arg = self.fields.index(field)
+            if field is None:
+                type_arg = 0
+            else:
+                type_arg = self.fields.index(field)
 
-        args_str = ', '.join([str(a) for a in args])
-        if effect:
-            self.emit(f'  @{gate}({type_arg}: {args_str});')
-            return
-        else:
-            r = self.next_wire()
-            self.emit(f'  {r} <- @{gate}({type_arg}: {args_str});')
-            return r
+            args_str = ', '.join([str(a) for a in args])
+            if effect:
+                self.emit(f'  @{gate}({type_arg}: {args_str});')
+                return
+            else:
+                r = self.next_wire()
+                self.emit(f'  {r} <- @{gate}({type_arg}: {args_str});')
+                return r
 
     def allocate(self, n, field=None):
         i = self.current_wire
