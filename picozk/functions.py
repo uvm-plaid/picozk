@@ -77,8 +77,7 @@ def picozk_function(func):
         cc.current_wire = 5000
         cc.constant_wire.cache_clear()
         old_relation_file = cc.relation_file
-        buf = StringIO("")
-        cc.relation_file = buf
+        cc.relation_file = None
 
         # run the function
         output = func(*args)

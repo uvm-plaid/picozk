@@ -83,8 +83,11 @@ class PicoZKCompiler(object):
         self.no_convert_is_neg = False
 
     def emit(self, s=''):
-        self.relation_file.write(s)
-        self.relation_file.write('\n')
+        if self.relation_file is None:
+            return
+        else:
+            self.relation_file.write(s)
+            self.relation_file.write('\n')
 
     def type_of(self, field):
         if field in self.fields:
@@ -95,12 +98,18 @@ class PicoZKCompiler(object):
             raise Exception('no known type for field:', field)
 
     def emit_call(self, call, *args):
+        if self.relation_file is None:
+            return
+
         args_str = ', '.join([str(a) for a in args])
         r = self.next_wire()
         self.emit(f'  {r} <- @call({call}, {args_str});')
         return r
 
     def emit_gate(self, gate, *args, effect=False, field=None):
+        if self.relation_file is None:
+            return
+
         if field is None:
             type_arg = 0
         else:
