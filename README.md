@@ -6,10 +6,10 @@ Integrated, Efficient, and Extensible Zero-Knowledge Proof Engineering
 
 ## Installation
 
-You can install the library directly from GitHub using `pip install`:
+You can install the library from PyPI using `pip install`:
 
 ```
-pip install git+https://github.com/uvm-plaid/picozk.git
+pip install picozk
 ```
 
 Or, clone the repository and then install with `pip install` (This library
@@ -22,7 +22,7 @@ pip install .
 ```
 
 If you want to run the [examples](examples), you'll need to install
-some extra python packages (which are optional and are not required to
+some extra Python packages (which are optional and are not required to
 install the core library). These dependent packages can be done by
 running the command `pip install ".[examples]"`.
 
