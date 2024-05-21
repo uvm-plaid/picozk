@@ -55,8 +55,11 @@ Running this program results in three files:
 
 These files can be used to generate a ZK proof using any backend
 compatible with the [SIEVE intermediate representation
-(IR)](https://github.com/sieve-zk/ir) -
-for example, the [EMP Toolkit](https://github.com/emp-toolkit/emp-ir).
+(IR)](https://github.com/sieve-zk/ir). There are currently two
+open-source backends compatible with the SIEVE IR:
+
+- [EMP Toolkit](https://github.com/emp-toolkit/emp-ir)
+- [Diet Mac'n'Cheese](https://github.com/GaloisInc/swanky)
 
 ## Licensing and Acknowledgments
 
