@@ -3,6 +3,8 @@ from picozk import util, config
 from picozk.binary_int import *
 import math
 
+import emp_bridge
+
 def val_of(x):
     if isinstance(x, Wire):
         if x.val is None:
@@ -36,11 +38,10 @@ class Wire:
             if isinstance(other, Wire):
                 assert other.field == self.field
                 assert type(self) == type(other), f'incompatible types: {type(self)}, {type(other)}'
-                r = config.cc.emit_gate('add', self.wire, other.wire,
-                                        field=self.field)
+                r = self.wire + other.wire
             elif isinstance(other, int):
-                r = config.cc.emit_gate('addc', self.wire, f'< {other % self.field} >',
-                                        field=self.field)
+                emp_other = emp_bridge.EMPIntFp.from_constant(other % self.field, emp_bridge.PUBLIC)
+                r = self.wire + emp_other
             else:
                 raise Exception(f'unknown type for addition: {type(other)}')
 
@@ -54,11 +55,10 @@ class Wire:
             if isinstance(other, Wire):
                 assert other.field == self.field
                 assert type(self) == type(other), f'incompatible types: {type(self)}, {type(other)}'
-                r = config.cc.emit_gate('mul', self.wire, other.wire,
-                                        field=self.field)
+                r = self.wire * other.wire
             elif isinstance(other, int):
-                r = config.cc.emit_gate('mulc', self.wire, f'< {other % self.field} >',
-                                        field=self.field)
+                emp_other = emp_bridge.EMPIntFp.from_constant(other % self.field, emp_bridge.PUBLIC)
+                r = self.wire * emp_other
             else:
                 raise Exception(f'unknown type for multiplication: {type(other)}')
 

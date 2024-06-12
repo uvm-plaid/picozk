@@ -5,8 +5,12 @@ from picozk.wire import *
 from picozk.binary_int import BinaryInt
 from picozk import config
 
+import emp_bridge
+
 def SecretInt(x, field=None):
-    return config.cc.add_to_witness(x, field)
+    f = 2**61-1
+    emp_val = emp_bridge.EMPIntFp.from_constant(x%f, emp_bridge.ALICE)
+    return ArithmeticWire(emp_val, x%f, f)
 
 def SecretBit(x):
     return config.cc.add_to_witness(x, 2)
@@ -18,13 +22,15 @@ def PublicBit(x):
     return config.cc.add_to_instance(x, 2)
 
 def reveal(x):
-    config.cc.emit_gate('assert_zero', (x + (-val_of(x))).wire, effect=True, field=x.field)
+    rv = x.wire.reveal()
+    assert val_of(x) == rv
 
 def assert0(x):
     if val_of(x):
         raise Exception('Failed assert0!', x)
 
-    config.cc.emit_gate('assert_zero', x.wire, effect=True, field=x.field)
+    rv = x.wire.reveal()
+    assert rv == 0
 
 def assert_eq(x, y):
     assert x.field == y.field
@@ -64,10 +70,10 @@ def modular_inverse(x, p):
 
 
 class PicoZKCompiler(object):
-    def __init__(self, file_prefix, field=2**61-1, options=[]):
-        self.file_prefix = file_prefix
+    def __init__(self, party, field=2**61-1, options=[]):
         self.current_wire = 0
         self.options = options
+        self.party = party
 
         if isinstance(field, int):
             self.fields = [field]
@@ -82,13 +88,6 @@ class PicoZKCompiler(object):
 
         self.no_convert_is_neg = False
 
-    def emit(self, s=''):
-        if self.relation_file is None:
-            return
-        else:
-            self.relation_file.write(s)
-            self.relation_file.write('\n')
-
     def type_of(self, field):
         if field in self.fields:
             return self.fields[field]
@@ -97,41 +96,6 @@ class PicoZKCompiler(object):
         else:
             raise Exception('no known type for field:', field)
 
-    def emit_call(self, call, *args):
-        if self.relation_file is None:
-            return self.next_wire()
-        else:
-            args_str = ', '.join([str(a) for a in args])
-            r = self.next_wire()
-            self.emit(f'  {r} <- @call({call}, {args_str});')
-            return r
-
-    def emit_gate(self, gate, *args, effect=False, field=None):
-        if self.relation_file is None:
-            if effect:
-                return
-            else:
-                return self.next_wire()
-        else:
-            if field is None:
-                type_arg = 0
-            else:
-                type_arg = self.fields.index(field)
-
-            args_str = ', '.join([str(a) for a in args])
-            if effect:
-                self.emit(f'  @{gate}({type_arg}: {args_str});')
-                return
-            else:
-                r = self.next_wire()
-                self.emit(f'  {r} <- @{gate}({type_arg}: {args_str});')
-                return r
-
-    def allocate(self, n, field=None):
-        i = self.current_wire
-        self.current_wire += n
-        self.emit_gate('new', f'${i} ... ${i + n-1}', effect=True, field=field)
-        return [f'${i}' for i in range(i, i+n)]
 
     def add_to_witness(self, x, field):
         if field == None:
@@ -190,104 +154,9 @@ class PicoZKCompiler(object):
         global cc
         config.cc = self
         cc = self
-
-        # Open the witness files: one per field
-        self.witness_files = []
-        for t, field in enumerate(self.fields):
-            f = open(self.file_prefix + f'.type{t}.wit', 'w')
-            self.witness_files.append(f)
-
-            f.write('version 2.2.0;\n')
-            f.write('private_input;\n')
-            f.write(f'@type field {field};\n')
-            f.write('@begin\n')
-
-        # Open the instance files: one per field
-        self.instance_files = []
-        for t, field in enumerate(self.fields):
-            f = open(self.file_prefix + f'.type{t}.ins', 'w')
-            self.instance_files.append(f)
-
-            f.write('version 2.2.0;\n')
-            f.write('public_input;\n')
-            f.write(f'@type field {field};\n')
-            f.write('@begin\n')
-
-        self.relation_file = open(self.file_prefix + '.rel', 'w')
-
-        self.emit('version 2.2.0;')
-        self.emit('circuit;')
-        self.emit('@plugin mux_v0;')
-
-        if 'ram' in self.options:
-            self.emit(f'@plugin ram_arith_v0;')
-
-        if 'div' in self.options:
-            self.emit(f'@plugin extended_arithmetic_v1;')
-
-        for field in self.fields:
-            self.emit(f'@type field {field};')
-
-        if 'ram' in self.options:
-            s = '@type @plugin(ram_arith_v0, ram, 0, {0}, {1}, {2});'
-            self.emit(s.format(20, # number of rams
-                               2000, # total allocation size
-                               2000)) # not sure
-
-        for t, field in enumerate(self.fields):
-            if field != 2:
-                bits_per_fe = util.get_bits_for_field(field)
-                self.emit(f'@convert(@out: {t}:1, @in: {self.BINARY_TYPE}:{bits_per_fe});')
-                self.emit(f'@convert(@out: {self.BINARY_TYPE}:{bits_per_fe}, @in: {t}:1);')
-        # bits_per_fe = util.get_bits_for_field(self.field)
-        # self.emit(f'@convert(@out: {self.ARITH_TYPE}:1, @in: {self.BINARY_TYPE}:{bits_per_fe});')
-        # self.emit(f'@convert(@out: {self.BINARY_TYPE}:{bits_per_fe}, @in: {self.ARITH_TYPE}:1);')
-
-        self.emit('@begin')
-
-        self.emit('  @function(mux, @out: 0:1, @in: 0:1, 0:1, 0:1)')
-        self.emit('    @plugin(mux_v0, permissive);')
-
-        if 'ram' in self.options:
-            self.emit(f'  @function(read_ram, @out: 0:1, @in: {self.RAM_TYPE}:1, 0:1)')
-            self.emit('    @plugin(ram_arith_v0, read);')
-            self.emit(f'  @function(write_ram, @in: {self.RAM_TYPE}:1, 0:1, 0:1)')
-            self.emit('    @plugin(ram_arith_v0, write);')
-            self.emit()
-
-        if 'div' in self.options:
-            for t, field in enumerate(self.fields):
-                if field != 2:
-                    self.emit(f'  // plugin function signature for division')
-                    self.emit(f'  @function(plugin_div_{t}, @out: {t}:1, {t}:1, @in: {t}:1, {t}:1)')
-                    self.emit(f'    @plugin(extended_arithmetic_v1, division);')
-                    self.emit(f'  // wrapper for division without modulus')
-                    self.emit(f'  @function(div_{t}, @out: {t}:1, @in: {t}:1, {t}:1)')
-                    self.emit(f'    $0, $3 <- @call(plugin_div_{t}, $1, $2);')
-                    self.emit(f'  @end')
-
-                    self.no_convert_is_neg = True
-                    bits_per_fe = util.get_bits_for_field(self.fields[t])
-                    self.emit(f'  // plugin function for bit decomposition')
-                    self.emit(f'  @function(plugin_decomp_{t}, @out: {t}:{bits_per_fe}, @in: {t}:1)')
-                    self.emit(f'    @plugin(extended_arithmetic_v1, bit_decompose);')
-                    self.emit(f'  @function(is_neg_{t}, @out: {t}:1, @in: {t}:1)')
-                    self.emit(f'    $2...${1 + bits_per_fe} <- @call(plugin_decomp_{t}, $1);')
-                    self.emit(f'    $0 <- {t}:$2;')
-                    self.emit(f'  @end')
+        emp_bridge.setup_arith_zk(self.party)
 
     def __exit__(self, exception_type, exception_value, traceback):
         config.cc = None
 
-        self.emit('@end')
-
-        for f in self.witness_files:
-            f.write('@end\n')
-            f.close()
-
-        for f in self.instance_files:
-            f.write('@end\n')
-            f.close()
-
-        self.relation_file.close()
-
+        emp_bridge.finish_arith_zk()
