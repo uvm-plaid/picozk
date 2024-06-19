@@ -4,13 +4,12 @@ import functools
 from picozk.wire import *
 from picozk.binary_int import BinaryInt
 from picozk import config
+import sys
 
 import emp_bridge
 
 def SecretInt(x, field=None):
-    f = 2**61-1
-    emp_val = emp_bridge.EMPIntFp.from_constant(x%f, emp_bridge.ALICE)
-    return ArithmeticWire(emp_val, x%f, f)
+    return config.cc.add_to_witness(x, field)
 
 def SecretBit(x):
     return config.cc.add_to_witness(x, 2)
@@ -23,7 +22,7 @@ def PublicBit(x):
 
 def reveal(x):
     rv = x.wire.reveal()
-    assert val_of(x) == rv
+    assert val_of(x) == rv, f'Revealed value ({rv}) not equal to expected ({val_of(x)})!'
 
 def assert0(x):
     if val_of(x):
@@ -70,85 +69,35 @@ def modular_inverse(x, p):
 
 
 class PicoZKCompiler(object):
-    def __init__(self, party, field=2**61-1, options=[]):
+    def __init__(self, filename, field=2**61-1, party=None, options=[]):
+        assert field == 2**61-1
         self.current_wire = 0
         self.options = options
-        self.party = party
-
-        if isinstance(field, int):
-            self.fields = [field]
-        elif isinstance(field, list):
-            self.fields = field
+        if party is None:
+            assert len(sys.argv) >= 2
+            self.party = int(sys.argv[1])
+            assert self.party in [1,2]
         else:
-            raise Exception('unknown field spec:', field)
-
-        self.fields.append(2)                   # add the binary field
-        self.BINARY_TYPE = len(self.fields) - 1 # binary type is the last field
-        self.RAM_TYPE = len(self.fields)        # RAM type is the one after that
-
-        self.no_convert_is_neg = False
-
-    def type_of(self, field):
-        if field in self.fields:
-            return self.fields[field]
-        elif field == 2:
-            return self.BINARY_TYPE
-        else:
-            raise Exception('no known type for field:', field)
-
+            self.party = party
 
     def add_to_witness(self, x, field):
-        if field == None:
-            field_type = 0
-            field = self.fields[field_type]
-        else:
-            field_type = self.fields.index(field)
-
-        x = int(x)
-        assert x % field == x
-
-        r = self.next_wire()
-        self.emit(f'  {r} <- @private({field_type});')
-        self.witness_files[field_type].write(f'  < {x} >;\n')
-
-        if field == 2:
-            return BinaryWire(r, x, 2)
-        else:
-            return ArithmeticWire(r, x, field)
+        f = 2**61-1
+        assert field == None or field == f
+        emp_val = emp_bridge.EMPIntFp.from_constant(x%f, emp_bridge.ALICE)
+        return ArithmeticWire(emp_val, x%f, f)
 
     def add_to_instance(self, x, field):
-        if field == None:
-            field_type = 0
-            field = self.fields[field_type]
-        else:
-            field_type = self.fields.index(field)
+        f = 2**61-1
+        assert field == None or field == f
+        emp_val = emp_bridge.EMPIntFp.from_constant(x%f, emp_bridge.PUBLIC)
+        return ArithmeticWire(emp_val, x%f, f)
 
-        x = int(x)
-        assert x % field == x
-
-        r = self.next_wire()
-        self.emit(f'  {r} <- @public({field_type});')
-        self.instance_files[field_type].write(f'  < {x} >;\n')
-
-        if field == 2:
-            return BinaryWire(r, x, 2)
-        else:
-            return ArithmeticWire(r, x, field)
-
-    # TODO: this assumes the default arithmetic field
-    # is there a way to fix it if that's wrong?
     @functools.cache
     def constant_wire(self, e):
-        field = self.fields[0]
-        v = int(e) % field
-        r = self.next_wire()
-        self.emit(f'  {r} <- <{v}>;')
-        return r
-
-    def next_wire(self):
-        r = self.current_wire
-        self.current_wire += 1
-        return '$' + str(r)
+        f = 2**61-1
+        v = int(e) % f
+        emp_val = emp_bridge.EMPIntFp.from_constant(v, emp_bridge.PUBLIC)
+        return ArithmeticWire(emp_val, v, f)
 
     def __enter__(self):
         global cc

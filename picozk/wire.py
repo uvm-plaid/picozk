@@ -20,7 +20,7 @@ def wire_of(e):
     if isinstance(e, Wire):
         return e.wire
     elif isinstance(e, int):
-        return config.cc.constant_wire(e)
+        return config.cc.constant_wire(e).wire
     else:
         raise Exception('no wire for value', e, 'of type', type(e))
 
@@ -40,8 +40,7 @@ class Wire:
                 assert type(self) == type(other), f'incompatible types: {type(self)}, {type(other)}'
                 r = self.wire + other.wire
             elif isinstance(other, int):
-                emp_other = emp_bridge.EMPIntFp.from_constant(other % self.field, emp_bridge.PUBLIC)
-                r = self.wire + emp_other
+                r = self.wire + wire_of(other)
             else:
                 raise Exception(f'unknown type for addition: {type(other)}')
 
@@ -57,8 +56,7 @@ class Wire:
                 assert type(self) == type(other), f'incompatible types: {type(self)}, {type(other)}'
                 r = self.wire * other.wire
             elif isinstance(other, int):
-                emp_other = emp_bridge.EMPIntFp.from_constant(other % self.field, emp_bridge.PUBLIC)
-                r = self.wire * emp_other
+                r = self.wire * wire_of(other)
             else:
                 raise Exception(f'unknown type for multiplication: {type(other)}')
 
@@ -75,11 +73,6 @@ class Wire:
 
     def __int__(self):
         raise Exception('unsupported')
-
-    # TODO: can we output delete gates by leveraging GC?
-    # def __del__(self):
-    #     if config.cc:
-    #         config.cc.emit_gate('delete', f'{self.wire}...{self.wire}', effect=True, field=self.field)
 
 @dataclass(unsafe_hash=True)
 class BooleanWire(Wire):
@@ -115,18 +108,11 @@ class ArithmeticWire(Wire):
         return (-self) + other
 
     def __eq__(self, other):
-        diff = self - other
-        r = config.cc.emit_call('mux', wire_of(diff), wire_of(1), wire_of(0))
-        return BooleanWire(r, int(val_of(self) == val_of(other)), self.field)
+        raise Exception('unsupported')
     __req__ = __eq__
 
     def is_negative(self):
-        if config.cc.no_convert_is_neg:
-            field_idx = config.cc.fields.index(self.field)
-            r = config.cc.emit_call(f'is_neg_{field_idx}', wire_of(self))
-            return BooleanWire(r, util.encode_int(self.val, self.field)[0], self.field)
-        else:
-            return self.to_binary().is_negative().to_bool()
+        raise Exception('unsupported')
 
     def __lt__(self, other):
         return (self - other).is_negative()
@@ -157,33 +143,23 @@ class ArithmeticWire(Wire):
         return exp_by_squaring(self, other)
 
     def __floordiv__(self, other):
-        assert val_of(other) != 0
-        field_idx = config.cc.fields.index(self.field)
-        r = config.cc.emit_call(f'div_{field_idx}', wire_of(self), wire_of(other))
-        return ArithmeticWire( \
-            r, (val_of(self) // val_of(other)) % self.field, self.field)
+        raise Exception('unsupported')
 
     def __mod__(self, other):
         assert isinstance(other, int)
         if other == self.field:
             return self
         elif math.log2(other) == int(math.log2(other)):
-            bits_to_keep = int(math.log2(other))
-            binary_rep = self.to_binary()
-            new_binary_rep = BinaryInt(binary_rep.wires[-bits_to_keep:])
-            return new_binary_rep.to_arithmetic()
+            raise Exception('unsupported')
+            # bits_to_keep = int(math.log2(other))
+            # binary_rep = self.to_binary()
+            # new_binary_rep = BinaryInt(binary_rep.wires[-bits_to_keep:])
+            # return new_binary_rep.to_arithmetic()
         else:
             raise Exception('unsupported modulus:', other)
 
     def to_binary(self):
-        assert self.field > 2
-        field_type = config.cc.fields.index(self.field)
-        bits = util.encode_int(self.val, self.field)
-        intv = util.decode_int(bits)
-        wire_names = config.cc.allocate(len(bits))
-        config.cc.emit(f'  {config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]} <- @convert({field_type}: {self.wire});')
-        wires = [BinaryWire(name, val, 2) for name, val in zip(wire_names, bits)]
-        return BinaryInt(wires)
+        raise Exception('unsupported')
 
 @dataclass(unsafe_hash=True)
 class BinaryWire(Wire):
@@ -196,21 +172,7 @@ class BinaryWire(Wire):
 
     def to_bool(self):
         assert self.field == 2
-        field = config.cc.fields[0]
-        field_type = 0
-        num_bits = util.get_bits_for_field(field)
-        wire_names = config.cc.allocate(num_bits, field=2)
-
-        for wire_name in wire_names[:-1]: # skip the last wire
-            config.cc.emit(f'  {wire_name} <- {config.cc.BINARY_TYPE}: < 0 >;')
-
-        config.cc.emit(f'  {wire_names[-1]} <- {config.cc.BINARY_TYPE}: {self.wire};')
-
-        r = config.cc.next_wire()
-
-        config.cc.emit(f'  {field_type}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
-
-        return BooleanWire(r, self.val, field)
+        raise Exception('unsupported')
 
     __xor__  = Wire.__add__
     __rxor__ = __xor__
