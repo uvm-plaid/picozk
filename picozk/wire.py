@@ -108,11 +108,30 @@ class ArithmeticWire(Wire):
         return (-self) + other
 
     def __eq__(self, other):
-        raise Exception('unsupported')
+        diff = self - other
+        diff_inv_val = 0 if diff.val == 0 else util.modular_inverse(diff.val, self.field)
+        res_val = 0 if diff.val == 0 else 1
+        diff_inv = config.cc.add_to_witness(diff_inv_val, self.field)
+        res = config.cc.add_to_witness(res_val, self.field)
+        should_be_zero = (diff_inv + 1) * diff * res - (res + diff)
+
+        assert should_be_zero.val == 0, f'Failed zero check: {should_be_zero}'
+        assert should_be_zero.wire.reveal() == 0
+
+        final_res = (res * (res.field - 1)) + 1
+
+        return BooleanWire(final_res.wire, final_res.val, final_res.field)
+
     __req__ = __eq__
 
     def is_negative(self):
+        # TODO: fix this faked function
         raise Exception('unsupported')
+
+        if self.val <= self.field/2:
+            return config.cc.add_to_witness(1, self.field)
+        else:
+            return config.cc.add_to_witness(0, self.field)
 
     def __lt__(self, other):
         return (self - other).is_negative()
