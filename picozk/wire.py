@@ -116,7 +116,8 @@ class ArithmeticWire(Wire):
         should_be_zero = (diff_inv + 1) * diff * res - (res + diff)
 
         assert should_be_zero.val == 0, f'Failed zero check: {should_be_zero}'
-        assert should_be_zero.wire.reveal() == 0
+        rv = should_be_zero.wire.reveal()
+        assert rv == 0, f'Failed reveal zero check: {rv}, {self.val}:{self.wire.reveal()}'
 
         final_res = (res * (res.field - 1)) + 1
 
@@ -126,12 +127,12 @@ class ArithmeticWire(Wire):
 
     def is_negative(self):
         # TODO: fix this faked function
-        raise Exception('unsupported')
+        #raise Exception('unsupported')
 
         if self.val <= self.field/2:
-            return config.cc.add_to_witness(1, self.field)
-        else:
             return config.cc.add_to_witness(0, self.field)
+        else:
+            return config.cc.add_to_witness(1, self.field)
 
     def __lt__(self, other):
         return (self - other).is_negative()

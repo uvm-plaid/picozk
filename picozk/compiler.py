@@ -23,13 +23,14 @@ def PublicBit(x):
 def reveal(x):
     rv = x.wire.reveal()
     assert val_of(x) == rv, f'Revealed value ({rv}) not equal to expected ({val_of(x)})!'
+    return rv
 
 def assert0(x):
     if val_of(x):
         raise Exception('Failed assert0!', x)
 
     rv = x.wire.reveal()
-    assert rv == 0
+    assert rv == 0, f'assert0 failed with revealed value {rv}!'
 
 def assert_eq(x, y):
     assert x.field == y.field
