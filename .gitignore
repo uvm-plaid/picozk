@@ -3,3 +3,5 @@
 *.wit
 __pycache__
 *.egg-info
+build/
+cython/
