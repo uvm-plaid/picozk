@@ -30,6 +30,7 @@ class Wire:
     wire: str  # wire is actually holding an EMP object, where supported
     val: int
     field: int
+    party: int
 
     def __add__(self, other):
         if isinstance(other, int) and other % self.field == 0:
@@ -179,7 +180,7 @@ class ArithmeticWire(Wire):
             raise Exception('unsupported modulus:', other)
 
     def to_binary(self):
-        raise Exception('unsupported')
+        return BinaryInt(emp_bridge.from_val(self.wire.reveal().bit_length(), self.wire.reveal(), self.party))
 
 @dataclass(unsafe_hash=True)
 class BinaryWire(Wire):

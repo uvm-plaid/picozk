@@ -91,7 +91,7 @@ class PicoZKCompiler(object):
         f = 2**61-1
         assert field == None or field == f
         emp_val = emp_bridge.EMPIntFp.from_constant(x%f, emp_bridge.PUBLIC)
-        return ArithmeticWire(emp_val, x%f, f)
+        return ArithmeticWire(emp_val, x%f, f, self.party)
 
     @functools.cache
     def constant_wire(self, e):
