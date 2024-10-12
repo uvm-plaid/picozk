@@ -180,6 +180,7 @@ class ArithmeticWire(Wire):
             raise Exception('unsupported modulus:', other)
 
     def to_binary(self):
+        print("@ TO BINARY")
         return BinaryInt(emp_bridge.from_val(self.wire.reveal().bit_length(), self.wire.reveal(), self.party))
 
 @dataclass(unsafe_hash=True)
