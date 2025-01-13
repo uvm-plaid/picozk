@@ -83,9 +83,7 @@ class PicoZKCompiler(object):
     def add_to_witness(self, x, field):
         f = 2**61-1
         assert field == None or field == f
-        print("Creating emp bridge val")
         emp_val = emp_bridge.EMPIntFp.from_constant(x%f, emp_bridge.ALICE)
-        print("Success!")
         return ArithmeticWire(emp_val, x%f, f, self.party)
 
     def add_to_instance(self, x, field):
@@ -111,5 +109,5 @@ class PicoZKCompiler(object):
 
     def __exit__(self, exception_type, exception_value, traceback):
         config.cc = None
-        emp_bridge.finish_bool_zk()
         emp_bridge.finish_arith_zk()
+        emp_bridge.finish_bool_zk()

@@ -6,7 +6,7 @@ with PicoZKCompiler('picozk_test', field=97):
 
     xb = x.to_binary()
     yb = (-y).to_binary()
-    
+
     eq1 = xb == yb
     print('x == y?', eq1)
     reveal(eq1)

@@ -181,7 +181,10 @@ class ArithmeticWire(Wire):
 
     def to_binary(self):
         print("@ TO BINARY")
-        return BinaryInt(emp_bridge.from_val(self.wire.reveal().bit_length(), self.wire.reveal(), self.party))
+        emp_bint = emp_bridge.EMPBitInt()
+        emp_bridge.intfp_to_bitint(emp_bint, self.wire, 1)
+        print("Created bint")
+        return bint
 
 @dataclass(unsafe_hash=True)
 class BinaryWire(Wire):
