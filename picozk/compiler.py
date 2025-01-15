@@ -5,7 +5,6 @@ from picozk.wire import *
 from picozk.binary_int import BinaryInt
 from picozk import config
 import sys
-
 import emp_bridge
 
 def SecretInt(x, field=None):

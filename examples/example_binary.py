@@ -5,7 +5,8 @@ with PicoZKCompiler('picozk_test', field=97):
     y = SecretInt(6)
 
     xb = x.to_binary()
-    yb = (-y).to_binary()
+    yb = y.to_binary()
+    print("After to_binary")
 
     eq1 = xb == yb
     print('x == y?', eq1)
