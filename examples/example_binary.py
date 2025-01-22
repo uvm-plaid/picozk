@@ -1,16 +1,17 @@
 from picozk import *
 
 with PicoZKCompiler('picozk_test', field=97):
-    x = SecretInt(5)
+    x = SecretInt(-5)
     y = SecretInt(6)
 
     xb = x.to_binary()
-    yb = y.to_binary()
+    yb = (-y)
+    yb = yb.to_binary()
     print("After to_binary")
 
     eq1 = xb == yb
     print('x == y?', eq1)
-    reveal(eq1)
+    reveal(eq1)  # Breaks here.
 
     eq2 = xb == xb
     print('x == x?', eq2)

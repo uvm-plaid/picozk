@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from picozk import util, config
 from picozk.binary_int import *
 import math
-
 import emp_bridge
 
 def val_of(x):
@@ -101,10 +100,13 @@ class BooleanWire(Wire):
 @dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
     def __neg__(self):
-        return self * (self.field - 1)
+        print("At negate")
+        self.wire = self.wire.negate()
+        return self
 
     def __sub__(self, other):
         return self + (-other)
+
     def __rsub__(self, other):
         return (-self) + other
 
