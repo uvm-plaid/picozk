@@ -17,10 +17,10 @@ class BinaryInt:
             raise Exception('no wires for value:', v)
 
     def __eq__(self, other):
-        ok = 1
-        for w1, w2 in zip(self.wires, self._wires_of(other)):
-            ok = ok * ((w1 * w2) + ((w1 + 1) * (w2 + 1)))
-        return ok
+        print("At equal")
+        emp_bit = self.wire == other.wire
+        print(type(emp_bit))
+        return emp_bit
 
     def __add__(self, other):
         out_wires = []

@@ -5,11 +5,11 @@ with PicoZKCompiler('picozk_test', field=97):
     y = SecretInt(6)
 
     xb = x.to_binary()
-    yb = (-y)
-    yb = yb.to_binary()
-    print("After to_binary")
+    yb = (-y).to_binary()
+    print("Completed to_binary on x and y")
 
     eq1 = xb == yb
+    print(type(eq1))
     print('x == y?', eq1)
     reveal(eq1)  # Breaks here.
 

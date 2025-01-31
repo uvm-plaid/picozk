@@ -4,6 +4,13 @@ from picozk.binary_int import *
 import math
 import emp_bridge
 
+# BooleanWire is an ArithmeticWire that is treated as a boolean.
+# BinaryWire is just one bit. ~ EMPBit class.
+# to_binary should convert an AW into a bint
+# EMPBit is wrapped by BinaryWire.
+# EMPIntFps are wrapped by ArithmeticWires (or BooleanWires, but only as a result of a comparison.
+# EMPBitInts are wrapped by binary_ints.
+
 def val_of(x):
     if isinstance(x, Wire):
         if x.val is None:
@@ -27,9 +34,9 @@ def wire_of(e):
 @dataclass(unsafe_hash=True)
 class Wire:
     wire: str  # wire is actually holding an EMP object, where supported
-    val: int
-    field: int
-    party: int
+    # val: int
+    # field: int
+    # party: int
 
     def __add__(self, other):
         if isinstance(other, int) and other % self.field == 0:
@@ -182,14 +189,12 @@ class ArithmeticWire(Wire):
             raise Exception('unsupported modulus:', other)
 
     def to_binary(self):
-        print("@ TO BINARY")
         converted_emp_bint = emp_bridge.intfp_to_bitint(self.wire)
-        print("Created bint")
-        return converted_emp_bint
+        return BinaryInt(converted_emp_bint)
 
 @dataclass(unsafe_hash=True)
 class BinaryWire(Wire):
-    def __eq__(self, other):
+    def __eq__(self, other): # This is essentially a xor, but adding 1 so that it is correct
         return (self + other) + 1
     __req__ = __eq__
 
