@@ -7,6 +7,10 @@ from picozk import config
 import sys
 import emp_bridge
 
+# Normally, picozk will not call secretx->addtowitness; this is manually done by the programmer.
+# Call binarywire constructor on all the equality operations.
+
+
 def SecretInt(x, field=None):
     return config.cc.add_to_witness(x, field)
 

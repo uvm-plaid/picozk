@@ -3,10 +3,10 @@ from typing import List
 from picozk.compiler import *
 from picozk import config, util, wire
 import emp_bridge
-
+'''
 @dataclass
 class BinaryInt:
-    wire: emp_bridge.EMPBitInt
+    wire: str
 
     def _wires_of(self, v):
         if isinstance(v, BinaryInt):
@@ -18,9 +18,9 @@ class BinaryInt:
 
     def __eq__(self, other):
         print("At equal")
-        emp_bit = self.wire == other.wire
-        print(type(emp_bit))
-        return emp_bit
+        # emp_bit = self.wire == other.wire
+        # print(type(emp_bit))
+        return BinaryWire("asdf")
 
     def __add__(self, other):
         out_wires = []
@@ -98,3 +98,4 @@ class BinaryInt:
         config.cc.emit(f'  {field_type}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
 
         return wire.ArithmeticWire(r, val, field)
+'''

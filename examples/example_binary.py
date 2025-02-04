@@ -9,6 +9,7 @@ with PicoZKCompiler('picozk_test', field=97):
     print("Completed to_binary on x and y")
 
     eq1 = xb == yb
+    print("Through equality")
     print(type(eq1))
     print('x == y?', eq1)
     reveal(eq1)  # Breaks here.
