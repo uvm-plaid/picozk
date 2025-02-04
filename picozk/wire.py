@@ -13,7 +13,7 @@ import emp_bridge
 
 def val_of(x):
     if isinstance(x, Wire):
-        if x.val is None:
+        if x.wire is None:
             raise Exception(f'Attempt to find value of None in object {x}')
         else:
             return x.val

@@ -10,17 +10,16 @@ with PicoZKCompiler('picozk_test', field=97):
 
     eq1 = xb == yb
     print("Through equality")
-    print(type(eq1))
     print('x == y?', eq1)
     reveal(eq1)  # Breaks here.
 
     eq2 = xb == xb
-    print('x == x?', eq2)
-    reveal(eq2)
+    print('x == x?', reveal(eq2))
+    # reveal(eq2)
 
     eq3 = xb == 6
-    print('x == 6?', eq3)
-    reveal(eq3)
+    print('x == 6?', reveal(eq3))
+    # reveal(eq3)
 
     eq4 = x < y
     print('x < y?', eq4)
