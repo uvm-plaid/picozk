@@ -231,8 +231,6 @@ class BinaryInt:
             emp_bit = self.wire == other.wire
             return BinaryWire(emp_bit)
         if type(other) is int:
-            print("int")
-            print(other.bit_length(), other, emp_bridge.PUBLIC)
             emp_int = emp_bridge.EMPBitInt.from_val(other.bit_length(), other, emp_bridge.PUBLIC)
             other_emp = BinaryInt(emp_int)
             emp_bit = self.wire == other_emp.wire

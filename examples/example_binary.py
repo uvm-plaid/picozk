@@ -16,7 +16,7 @@ with PicoZKCompiler('picozk_test', field=97):
     # reveal(eq2)
 
     print("At third equality")
-    eq3 = xb == -5
+    eq3 = xb == 6
     print('x == 6?', reveal(eq3))
     # reveal(eq3)
     print("Completed third equality")
