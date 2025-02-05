@@ -6,20 +6,20 @@ with PicoZKCompiler('picozk_test', field=97):
 
     xb = x.to_binary()
     yb = (-y).to_binary()
-    print("Completed to_binary on x and y")
 
     eq1 = xb == yb
-    print("Through equality")
-    print('x == y?', eq1)
-    reveal(eq1)  # Breaks here.
+    print('x == y?', reveal(eq1), '\n')
+    # reveal(eq1)
 
     eq2 = xb == xb
-    print('x == x?', reveal(eq2))
+    print('x == x?', reveal(eq2), '\n')
     # reveal(eq2)
 
-    eq3 = xb == 6
+    print("At third equality")
+    eq3 = xb == -5
     print('x == 6?', reveal(eq3))
     # reveal(eq3)
+    print("Completed third equality")
 
     eq4 = x < y
     print('x < y?', eq4)

@@ -11,6 +11,8 @@ import emp_bridge
 # EMPIntFps are wrapped by ArithmeticWires (or BooleanWires, but only as a result of a comparison.
 # EMPBitInts are wrapped by binary_ints.
 
+DEF_LEN = 2**61-1
+
 def val_of(x):
     if isinstance(x, Wire):
         if x.wire is None:
@@ -107,7 +109,6 @@ class BooleanWire(Wire):
 @dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
     def __neg__(self):
-        print("At negate")
         self.wire = self.wire.negate()
         return self
 
@@ -226,10 +227,16 @@ class BinaryInt:
             raise Exception('no wires for value:', v)
 
     def __eq__(self, other):
-        print("At equal")
-        emp_bit = self.wire == other.wire
-        print(type(emp_bit))
-        return BinaryWire(emp_bit)
+        if type(other) is BinaryInt:
+            emp_bit = self.wire == other.wire
+            return BinaryWire(emp_bit)
+        if type(other) is int:
+            print("int")
+            print(other.bit_length(), other, emp_bridge.PUBLIC)
+            emp_int = emp_bridge.EMPBitInt.from_val(other.bit_length(), other, emp_bridge.PUBLIC)
+            other_emp = BinaryInt(emp_int)
+            emp_bit = self.wire == other_emp.wire
+            return BinaryWire(emp_bit)
 
     def __add__(self, other):
         out_wires = []
