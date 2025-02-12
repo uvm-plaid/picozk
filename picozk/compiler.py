@@ -23,11 +23,9 @@ def PublicInt(x, field=None):
 def PublicBit(x):
     return config.cc.add_to_instance(x, 2)
 
+# Removed assertion that originally existed in pure python / pico implementation.
 def reveal(x):
     rv = x.wire.reveal()
-    # assert val_of(x) == rv, f'Revealed value ({rv}) not equal to expected ({val_of(x)})!'
-    ''' There is currently no value attribute using the EMP implementation. 
-    Removed this assertion for now. '''
     return rv
 
 def assert0(x):

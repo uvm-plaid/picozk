@@ -11,6 +11,10 @@ import emp_bridge
 # EMPIntFps are wrapped by ArithmeticWires (or BooleanWires, but only as a result of a comparison.
 # EMPBitInts are wrapped by binary_ints.
 
+''' Use an EMP implementation of ArithInt comparisons. Convert result to binary & run is_negative.
+Write a Python method to get the 0th bit. See if EMP implementation of bint is signed or not...
+Size method in EMP can be used for comparison between bints and normal ints.'''
+
 DEF_LEN = 2**61-1
 
 def val_of(x):
@@ -216,7 +220,7 @@ class BinaryWire(Wire):
 
 @dataclass
 class BinaryInt:
-    wire: str
+    wire: str  #
 
     def _wires_of(self, v):
         if isinstance(v, BinaryInt):
@@ -226,14 +230,19 @@ class BinaryInt:
         else:
             raise Exception('no wires for value:', v)
 
+    ''' Numeric operators '''
     def __eq__(self, other):
         if type(other) is BinaryInt:
             emp_bit = self.wire == other.wire
             return BinaryWire(emp_bit)
         if type(other) is int:
-            emp_int = emp_bridge.EMPBitInt.from_val(other.bit_length(), other, emp_bridge.PUBLIC)
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
             other_emp = BinaryInt(emp_int)
             emp_bit = self.wire == other_emp.wire
+            return BinaryWire(emp_bit)
+    def __lt__(self, other):
+        if type(other) is BinaryInt:
+            emp_bit = self.wire < other.wire
             return BinaryWire(emp_bit)
 
     def __add__(self, other):
