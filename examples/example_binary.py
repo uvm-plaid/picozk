@@ -1,7 +1,7 @@
 from picozk import *
 
 with PicoZKCompiler('picozk_test', field=97):
-    x = SecretInt(-5)
+    x = SecretInt(5)
     y = SecretInt(6)
     z = SecretInt(6)
 
@@ -29,12 +29,10 @@ with PicoZKCompiler('picozk_test', field=97):
     print('x < y?', reveal(eq4), '\n')
 
     eq5 = y < x
-    print('y < x?', eq5)
-    reveal(eq5)
+    print('y < x?', reveal(eq5), '\n')
 
     eq6 = y < y
-    print('y < y?', eq6)
-    reveal(eq6)
+    print('y < y?', reveal(eq6), '\n')
 
     eq7 = x > y
     print('x > y?', eq7)

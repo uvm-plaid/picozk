@@ -112,6 +112,10 @@ class BooleanWire(Wire):
 
 @dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
+    def __add__(self, other):
+        emp_wire = self.wire + other.wire
+        return ArithmeticWire(emp_wire)
+
     def __neg__(self):
         self.wire = self.wire.negate()
         return self
@@ -150,7 +154,11 @@ class ArithmeticWire(Wire):
             return config.cc.add_to_witness(1, self.field)
 
     def __lt__(self, other):
-        return (self - other).is_negative()
+        temp = (self - other).to_binary()
+        print("Completed lt t_b")
+        is_neg = temp.is_negative()
+        print("Completed is_neg")
+        return is_neg
 
     def __gt__(self, other):
         return (other - self).is_negative()
