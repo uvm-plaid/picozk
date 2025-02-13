@@ -289,7 +289,9 @@ class BinaryInt:
         return BinaryInt([~b for b in self.wires])
 
     def is_negative(self):
-        return self.wires[0]
+        # Get the least significant bit of the bint, where the negative sign is stored(?)
+        emp_bit = self.wire.get_index(self.wire.size() - 1)
+        return BinaryWire(emp_bit)
 
     def to_arithmetic(self, field=None):
         if field is None:

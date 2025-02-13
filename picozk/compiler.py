@@ -10,6 +10,9 @@ import emp_bridge
 # Normally, picozk will not call secretx->addtowitness; this is manually done by the programmer.
 # Call binarywire constructor on all the equality operations.
 
+ARITH = None
+BINARY = 0
+STD_SIZE = 64
 
 def SecretInt(x, field=None):
     return config.cc.add_to_witness(x, field)
@@ -85,9 +88,13 @@ class PicoZKCompiler(object):
 
     def add_to_witness(self, x, field):
         f = 2**61-1
-        assert field == None or field == f
-        emp_val = emp_bridge.EMPIntFp.from_constant(x%f, emp_bridge.ALICE)
-        return ArithmeticWire(emp_val)
+        assert field == ARITH or field == BINARY or field == f
+        if field == ARITH:
+            emp_val = emp_bridge.EMPIntFp.from_constant(x % f, emp_bridge.ALICE)
+            return ArithmeticWire(emp_val)
+        elif field == BINARY:
+            emp_val = emp_bridge.EMPBitInt.from_val(STD_SIZE, x, emp_bridge.ALICE)
+            return BinaryInt(emp_val)
 
     def add_to_instance(self, x, field):
         f = 2**61-1
