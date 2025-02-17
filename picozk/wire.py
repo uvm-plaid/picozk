@@ -117,8 +117,8 @@ class ArithmeticWire(Wire):
         return ArithmeticWire(emp_wire)
 
     def __neg__(self):
-        self.wire = self.wire.negate()
-        return self
+        neg_wire = self.wire.negate()
+        return ArithmeticWire(neg_wire)
 
     def __sub__(self, other):
         return self + (-other)
@@ -296,9 +296,14 @@ class BinaryInt:
     def __invert__(self):
         return BinaryInt([~b for b in self.wires])
 
+    '''
+        # Get the second least significant bit of the bint, where the negative sign is stored
+        # Due to jank in EMP itself, negativity is stored in the lowest bit for native binary integers,
+        # and in the second lowest bit for converted arith->binary integers; this function is only needed
+        # for the latter. 
+    '''
     def is_negative(self):
-        # Get the least significant bit of the bint, where the negative sign is stored(?)
-        emp_bit = self.wire.get_index(self.wire.size() - 1)
+        emp_bit = self.wire.get_index(self.wire.size() - 2)
         return BinaryWire(emp_bit)
 
     def to_arithmetic(self, field=None):

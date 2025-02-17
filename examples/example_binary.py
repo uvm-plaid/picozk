@@ -21,7 +21,7 @@ with PicoZKCompiler('picozk_test', field=97):
     print('y == z?', reveal(eq2), '\n')
     # reveal(eq2)
 
-    eq3 = yb == 6 # y == z, which is correct, but y does not equal 6, which is not right. Discuss proper implementation of creating bints
+    eq3 = yb == 6
     print('y == 6?', reveal(eq3), '\n')
     # reveal(eq3)
 
