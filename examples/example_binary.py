@@ -21,20 +21,20 @@ with PicoZKCompiler('picozk_test', field=97):
     eq3 = yb == 6
     print('y == 6?', reveal(eq3), '\n')
 
-    eq4 = x < y
-    print('x < y?', reveal(eq4), '\n')
+    eq4 = x <= y
+    print('x <= y?', reveal(eq4), '\n')
 
-    eq5 = y < x
-    print('y < x?', reveal(eq5), '\n')
+    eq5 = y <= x
+    print('y <= x?', reveal(eq5), '\n')
 
-    eq6 = y < y
-    print('y < y?', reveal(eq6), '\n')
+    eq6 = y <= y
+    print('y <= y?', reveal(eq6), '\n')
 
-    eq7 = x > y
-    print('x > y?', reveal(eq7), '\n')
+    eq7 = x >= y
+    print('x => y?', reveal(eq7), '\n')
 
-    eq8 = y > x
-    print('y > x?', reveal(eq8), '\n')
+    eq8 = y >= x
+    print('y => x?', reveal(eq8), '\n')
 
-    eq9 = y > y
-    print('y > y?', reveal(eq9), '\n')
+    eq9 = y >= y
+    print('y => y?', reveal(eq9), '\n')

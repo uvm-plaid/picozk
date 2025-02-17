@@ -210,7 +210,8 @@ class BinaryWire(Wire):
     __req__ = __eq__
 
     def __invert__(self):
-        return self + 1
+        inv_wire = ~self.wire
+        return BinaryWire(inv_wire)
 
     def to_bool(self):
         assert self.field == 2
@@ -220,9 +221,6 @@ class BinaryWire(Wire):
     __rxor__ = __xor__
     __and__  = Wire.__mul__
     __rand__ = __and__
-
-    def __invert__(self):
-        return self + 1
 
 @dataclass
 class BinaryInt:
