@@ -11,19 +11,15 @@ with PicoZKCompiler('picozk_test', field=97):
 
     eq1 = xb == yb
     print('x == y?', reveal(eq1), '\n')
-    # reveal(eq1)
 
-    eq2 = xb == xb
-    print('x == x?', reveal(eq2), '\n')
-    # reveal(eq2)
+    eq2a = xb == xb
+    print('x == x?', reveal(eq2a), '\n')
 
-    eq2 = yb == zb
-    print('y == z?', reveal(eq2), '\n')
-    # reveal(eq2)
+    eq2b = yb == zb
+    print('y == z?', reveal(eq2b), '\n')
 
     eq3 = yb == 6
     print('y == 6?', reveal(eq3), '\n')
-    # reveal(eq3)
 
     eq4 = x < y
     print('x < y?', reveal(eq4), '\n')
@@ -35,13 +31,10 @@ with PicoZKCompiler('picozk_test', field=97):
     print('y < y?', reveal(eq6), '\n')
 
     eq7 = x > y
-    print('x > y?', eq7)
-    reveal(eq7)
+    print('x > y?', reveal(eq7), '\n')
 
     eq8 = y > x
-    print('y > x?', eq8)
-    reveal(eq8)
+    print('y > x?', reveal(eq8), '\n')
 
     eq9 = y > y
-    print('y > y?', eq9)
-    reveal(eq9)
+    print('y > y?', reveal(eq9), '\n')

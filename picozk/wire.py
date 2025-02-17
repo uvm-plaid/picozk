@@ -155,13 +155,11 @@ class ArithmeticWire(Wire):
 
     def __lt__(self, other):
         temp = (self - other).to_binary()
-        print("Completed lt t_b")
-        is_neg = temp.is_negative()
-        print("Completed is_neg")
-        return is_neg
+        return temp.is_negative()
 
     def __gt__(self, other):
-        return (other - self).is_negative()
+        temp = (other - self).to_binary()
+        return temp.is_negative()
 
     def __le__(self, other):
         return ~(self > other)
