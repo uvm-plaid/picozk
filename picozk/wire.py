@@ -113,8 +113,12 @@ class BooleanWire(Wire):
 @dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
     def __add__(self, other):
-        emp_wire = self.wire + other.wire
-        return ArithmeticWire(emp_wire)
+        if type(other) == ArithmeticWire:
+            emp_wire = self.wire + other.wire
+            return ArithmeticWire(emp_wire)
+        elif type(other) == BinaryInt:
+            arith = other.to_arithmetic()
+            return self + arith
 
     def __neg__(self):
         neg_wire = self.wire.negate()
@@ -127,20 +131,9 @@ class ArithmeticWire(Wire):
         return (-self) + other
 
     def __eq__(self, other):
-        diff = self - other
-        diff_inv_val = 0 if diff.val == 0 else util.modular_inverse(diff.val, self.field)
-        res_val = 0 if diff.val == 0 else 1
-        diff_inv = config.cc.add_to_witness(diff_inv_val, self.field)
-        res = config.cc.add_to_witness(res_val, self.field)
-        should_be_zero = (diff_inv + 1) * diff * res - (res + diff)
-
-        assert should_be_zero.val == 0, f'Failed zero check: {should_be_zero}'
-        rv = should_be_zero.wire.reveal()
-        assert rv == 0, f'Failed reveal zero check: {rv}, {self.val}:{self.wire.reveal()}'
-
-        final_res = (res * (res.field - 1)) + 1
-
-        return BooleanWire(final_res.wire, final_res.val, final_res.field)
+        diff = (self - other).to_binary()
+        zero = BinaryInt(emp_bridge.EMPBitInt.from_val(diff.wire.size(), 0, emp_bridge.PUBLIC))
+        return diff == zero
 
     __req__ = __eq__
 
@@ -302,33 +295,6 @@ class BinaryInt:
         emp_bit = self.wire.get_index(self.wire.size() - 2)
         return BinaryWire(emp_bit)
 
-    def to_arithmetic(self, field=None):
-        if field is None:
-            field = config.cc.fields[0]
-            field_type = 0
-        else:
-            field_type = config.cc.fields.index(field)
-
-        num_bits = util.get_bits_for_field(field)
-        assert num_bits >= len(self.wires)
-
-        wire_names = config.cc.allocate(num_bits, field=2)
-        # pad with 0s
-        wire_vals = [0]*(num_bits-len(self.wires)) + self.wires
-
-        for new_w, old_w in zip(wire_names, wire_vals):
-            if isinstance(old_w, int):
-                config.cc.emit(f'  {new_w} <- {config.cc.BINARY_TYPE}: < {old_w} >;')
-            elif isinstance(old_w, wire.BinaryWire):
-                config.cc.emit(f'  {new_w} <- {config.cc.BINARY_TYPE}: {old_w.wire};')
-            else:
-                raise Exception('Unsupported wire element:', old_w)
-
-        bits = [wire.val_of(b) for b in self.wires]
-        val = util.decode_int(bits)
-
-        r = config.cc.next_wire()
-
-        config.cc.emit(f'  {field_type}: {r} <- @convert({config.cc.BINARY_TYPE}: {wire_names[0]} ... {wire_names[-1]});')
-
-        return wire.ArithmeticWire(r, val, field)
+    def to_arithmetic(self):
+        arith_wire = emp_bridge.bitint_to_intfp(self.wire)
+        return ArithmeticWire(arith_wire)
