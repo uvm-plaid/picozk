@@ -47,11 +47,8 @@ class ArithmeticWire(Wire):
         if type(other) == ArithmeticWire:
             emp_wire = self.wire + other.wire
             return ArithmeticWire(emp_wire)
-        elif type(other) == BinaryInt:
-            arith = other.to_arithmetic()
-            return self + arith
         elif type(other == int):
-            arith = ArithmeticWire(emp_bridge.EMPIntFp.from_val(other, emp_bridge.PUBLIC))
+            arith = ArithmeticWire(emp_bridge.EMPIntFp.from_constant(other, emp_bridge.PUBLIC))
             return self + arith
 
     def __neg__(self):
@@ -90,10 +87,17 @@ class ArithmeticWire(Wire):
         return ~(self < other)
 
     def __mul__(self, other):
-
+        if type(other) == ArithmeticWire:
+            emp_wire = self.wire * other.wire
+            return ArithmeticWire(emp_wire)
+        elif type(other) == int:
+            if other < 0:
+                raise Exception("Only positive integers allowed in arithmeticwire __mul__")
+            emp_wire = self.wire * other
+            return ArithmeticWire(emp_wire)
 
     def __pow__(self, other):
-        i = 0 ''' TO IMPLEMENT '''
+        i = 0
 
     def __floordiv__(self, other):
         raise Exception('unsupported')
@@ -128,11 +132,6 @@ class BinaryWire(Wire):
     def to_bool(self):
         assert self.field == 2
         raise Exception('unsupported')
-
-    __xor__  = Wire.__add__
-    __rxor__ = __xor__
-    __and__  = Wire.__mul__
-    __rand__ = __and__
 
 @dataclass
 class BinaryInt:
