@@ -119,14 +119,30 @@ class ArithmeticWire(Wire):
 
 @dataclass(unsafe_hash=True)
 class BinaryWire(Wire):
+    def __ne__(self, other):
+        emp_wire = self.wire != other.wire
+        return BinaryWire(emp_wire)
+
     def __eq__(self, other):
         emp_wire = self.wire == other.wire
         return BinaryWire(emp_wire)
     __req__ = __eq__
 
+    def __and__(self, other):
+        emp_wire = self.wire & other.wire
+        return BinaryWire(emp_wire)
+
+    def __or__(self, other):
+        emp_wire = self.wire | other.wire
+        return BinaryWire(emp_wire)
+
     def __invert__(self):
         inv_wire = ~self.wire
         return BinaryWire(inv_wire)
+
+    def __xor__(self, other):
+        emp_wire = self.wire ^ other.wire
+        return BinaryWire(emp_wire)
 
     def to_bool(self):
         assert self.field == 2
