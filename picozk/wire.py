@@ -92,28 +92,26 @@ class ArithmeticWire(Wire):
             return ArithmeticWire(emp_wire)
         elif type(other) == int:
             if other < 0:
-                raise Exception("Only positive integers allowed in arithmeticwire __mul__")
+                raise Exception("Only positive Python integers allowed in arithmeticwire __mul__")
             emp_wire = self.wire * other
             return ArithmeticWire(emp_wire)
 
-    def __pow__(self, other):
-        i = 0
+    # def __pow__(self, other):
+    # Ask about how to implement this, given negative numbers.
 
     def __floordiv__(self, other):
         raise Exception('unsupported')
+        # Ask about implementation - e.g. is binint division floor division?
 
     def __mod__(self, other):
-        assert isinstance(other, int)
-        if other == self.field:
-            return self
-        elif math.log2(other) == int(math.log2(other)):
-            raise Exception('unsupported')
-            # bits_to_keep = int(math.log2(other))
-            # binary_rep = self.to_binary()
-            # new_binary_rep = BinaryInt(binary_rep.wires[-bits_to_keep:])
-            # return new_binary_rep.to_arithmetic()
-        else:
-            raise Exception('unsupported modulus:', other)
+        if type(other) == ArithmeticWire:
+            mod_result = self.to_binary() % other.to_binary()
+            return mod_result.to_arithmetic()
+        if type(other) == int:
+            bin_val = self.to_binary()
+            temp = BinaryInt(emp_bridge.EMPBitInt.from_val(bin_val.wire.size(), other, emp_bridge.PUBLIC))
+            mod_result = bin_val % temp
+            return mod_result.to_arithmetic()
 
     def to_binary(self):
         converted_emp_bint = emp_bridge.intfp_to_bitint(self.wire)
@@ -202,6 +200,10 @@ class BinaryInt:
 
     def __invert__(self):
         return BinaryInt([~b for b in self.wires])
+
+    def __mod__(self, other):
+        mod_wire = self.wire % other.wire
+        return BinaryInt(mod_wire)
 
     '''
         # Get the second least significant bit of the bint, where the negative sign is stored
