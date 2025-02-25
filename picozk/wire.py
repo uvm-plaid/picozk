@@ -119,8 +119,9 @@ class ArithmeticWire(Wire):
 
 @dataclass(unsafe_hash=True)
 class BinaryWire(Wire):
-    def __eq__(self, other): # This is essentially a xor, but adding 1 so that it is correct
-        return (self + other) + 1
+    def __eq__(self, other):
+        emp_wire = self.wire == other.wire
+        return BinaryWire(emp_wire)
     __req__ = __eq__
 
     def __invert__(self):

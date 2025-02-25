@@ -12,19 +12,20 @@ import emp_bridge
 
 ARITH = None
 BINARY = 0
+BOOL_BIT = 1
 STD_SIZE = 64
 
 def SecretInt(x, field=None):
     return config.cc.add_to_witness(x, field)
 
 def SecretBit(x):
-    return config.cc.add_to_witness(x, 2)
+    return config.cc.add_to_witness(x, BOOL_BIT)
 
 def PublicInt(x, field=None):
     return config.cc.add_to_instance(x, field)
 
 def PublicBit(x):
-    return config.cc.add_to_instance(x, 2)
+    return config.cc.add_to_instance(x, BOOL_BIT)
 
 # Removed assertion that originally existed in pure python / pico implementation.
 def reveal(x):
@@ -88,13 +89,23 @@ class PicoZKCompiler(object):
 
     def add_to_witness(self, x, field):
         f = 2**61-1
-        assert field == ARITH or field == BINARY or field == f
+        assert field == ARITH or field == BINARY or field == BOOL_BIT or field == f
         if field == ARITH:
             emp_val = emp_bridge.EMPIntFp.from_constant(x % f, emp_bridge.ALICE)
             return ArithmeticWire(emp_val)
         elif field == BINARY:
             emp_val = emp_bridge.EMPBitInt.from_val(STD_SIZE, x, emp_bridge.ALICE)
             return BinaryInt(emp_val)
+        elif field == BOOL_BIT:
+            if type(x) == bool:
+                emp_val = emp_bridge.EMPBit.from_constant(x, emp_bridge.ALICE)
+                return BinaryWire(emp_val)
+            if x == 0:
+                emp_val = emp_bridge.EMPBit.from_constant(False, emp_bridge.ALICE)
+                return BinaryWire(emp_val)
+            elif x == 1:
+                emp_val = emp_bridge.EMPBit.from_constant(True, emp_bridge.ALICE)
+                return BinaryWire(emp_val)
 
     def add_to_instance(self, x, field):
         f = 2**61-1
