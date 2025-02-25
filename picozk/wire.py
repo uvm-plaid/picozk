@@ -40,75 +40,6 @@ def wire_of(e):
 @dataclass(unsafe_hash=True)
 class Wire:
     wire: str  # wire is actually holding an EMP object, where supported
-    # val: int
-    # field: int
-    # party: int
-
-    def __add__(self, other):
-        if isinstance(other, int) and other % self.field == 0:
-            return self
-        else:
-            if isinstance(other, Wire):
-                assert other.field == self.field
-                assert type(self) == type(other), f'incompatible types: {type(self)}, {type(other)}'
-                r = self.wire + other.wire
-            elif isinstance(other, int):
-                r = self.wire + wire_of(other)
-            else:
-                raise Exception(f'unknown type for addition: {type(other)}')
-
-            return type(self)(r, (self.val + val_of(other)) % self.field, self.field)
-    __radd__ = __add__
-
-    def __mul__(self, other):
-        if isinstance(other, int) and other % self.field == 0:
-            return 0
-        else:
-            if isinstance(other, Wire):
-                assert other.field == self.field
-                assert type(self) == type(other), f'incompatible types: {type(self)}, {type(other)}'
-                r = self.wire * other.wire
-            elif isinstance(other, int):
-                r = self.wire * wire_of(other)
-            else:
-                raise Exception(f'unknown type for multiplication: {type(other)}')
-
-            return type(self)(r, (self.val * val_of(other)) % self.field, self.field)
-    __rmul__ = __mul__
-
-    def __mod__(self, other):
-        assert isinstance(other, int)
-        assert other == self.field
-        return self
-
-    def __bool__(self):
-        raise Exception('unsupported')
-
-    def __int__(self):
-        raise Exception('unsupported')
-
-@dataclass(unsafe_hash=True)
-class BooleanWire(Wire):
-    def __and__(self, other):
-        return self * other
-    __rand__ = __and__
-
-    def __or__(self, other):
-        return (l * r) * (self.field - 1) + (l + r)
-    __ror__ = __or__
-
-    def __invert__(self):
-        return (self * (self.field - 1)) + 1
-
-    def __rsub__(self, other):
-        assert other == 1
-        return ~self
-
-    def to_arith(self):
-        return ArithmeticWire(self.wire, self.val, self.field)
-
-    def if_else(self, then_val, else_val):
-        return else_val + self.to_arith() * (then_val - else_val)
 
 @dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
@@ -118,6 +49,9 @@ class ArithmeticWire(Wire):
             return ArithmeticWire(emp_wire)
         elif type(other) == BinaryInt:
             arith = other.to_arithmetic()
+            return self + arith
+        elif type(other == int):
+            arith = ArithmeticWire(emp_bridge.EMPIntFp.from_val(other, emp_bridge.PUBLIC))
             return self + arith
 
     def __neg__(self):
@@ -138,13 +72,8 @@ class ArithmeticWire(Wire):
     __req__ = __eq__
 
     def is_negative(self):
-        # TODO: fix this faked function
-        #raise Exception('unsupported')
-
-        if self.val <= self.field/2:
-            return config.cc.add_to_witness(0, self.field)
-        else:
-            return config.cc.add_to_witness(1, self.field)
+        temp = self.to_binary()
+        return temp.is_negative()
 
     def __lt__(self, other):
         temp = (self - other).to_binary()
@@ -160,21 +89,11 @@ class ArithmeticWire(Wire):
     def __ge__(self, other):
         return ~(self < other)
 
-    def __pow__(self, other, p=None):
-        def exp_by_squaring(x, n):
-            assert n > 0
-            if n%2 == 0:
-                if n // 2 == 1:
-                    return x * x
-                else:
-                    return exp_by_squaring(x * x,  n // 2)
-            else:
-                return x * exp_by_squaring(x * x, (n - 1) // 2)
+    def __mul__(self, other):
 
-        assert isinstance(other, int)
-        if p != None:
-            assert p == self.field
-        return exp_by_squaring(self, other)
+
+    def __pow__(self, other):
+        i = 0 ''' TO IMPLEMENT '''
 
     def __floordiv__(self, other):
         raise Exception('unsupported')
