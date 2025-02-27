@@ -17,6 +17,11 @@ class Wire:
 
 @dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
+    def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
+        if expect is None:
+            return self.wire.reveal_no_expect()
+        return self.wire.reveal_expect(expect)
+
     def __add__(self, other):
         if type(other) == ArithmeticWire:
             emp_wire = self.wire + other.wire
@@ -93,6 +98,9 @@ class ArithmeticWire(Wire):
 
 @dataclass(unsafe_hash=True)
 class BinaryWire(Wire):
+    def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
+        return self.wire.reveal()
+
     def __ne__(self, other):
         emp_wire = self.wire != other.wire
         return BinaryWire(emp_wire)
@@ -120,6 +128,11 @@ class BinaryWire(Wire):
 
 @dataclass
 class BinaryInt(Wire):
+    def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
+        if signed:
+            return self.wire.signed_reveal(party)
+        return self.wire.unsigned_reveal(party)
+
     # Numeric comparisons
     def __eq__(self, other):
         if type(other) is BinaryInt:
