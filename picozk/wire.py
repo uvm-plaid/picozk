@@ -163,59 +163,81 @@ class BinaryInt(Wire):
             emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
             return BinaryWire(self.wire >= emp_int)
 
-    def __add__(self, other):
-        out_wires = []
-        carry = 0
-
-        for a, b in zip(reversed(self.wires), reversed(self._wires_of(other))):
-            ab = a + b
-            out = ab + carry % 2
-            out_wires.append(out)
-            carry = ((a + carry) * (b + carry) + carry) % 2
-        return BinaryInt(list(reversed(out_wires)))
-    __radd__ = __add__
-
+    # Bit shifting operations
     def __rshift__(self, other):
         if type(other) is BinaryInt:
             return BinaryInt(self.wire >> other.wire)
-        elif type(other) is int:
-            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
-            return BinaryInt(self.wire >> emp_int)
+        elif type(other) is int and other >= 0:
+            return BinaryInt(self.wire >> other)
 
     def __lshift__(self, other):
         if type(other) is BinaryInt:
             return BinaryInt(self.wire << other.wire)
-        elif type(other) is int:
+        elif type(other) is int and other >= 0:
+            return BinaryInt(self.wire << other)
+
+    # Numeric operations
+    def __add__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryInt(self.wire + other.wire)
+        if type(other) is int:
             emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
-            return BinaryInt(self.wire << emp_int)
+            return BinaryInt(self.wire + emp_int)
+    __radd__ = __add__
 
-    def rotr(self, n):
-        assert isinstance(n, int)
-        bw = len(self.wires)
-        return BinaryInt(self.wires[bw-n:] + self.wires[:bw-n])
+    def __sub__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryInt(self.wire - other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryInt(self.wire - emp_int)
+    __rsub__ = __sub__
 
-    def rotl(self, n):
-        assert isinstance(n, int)
-        bw = len(self.wires)
-        return BinaryInt(self.wires[n:] + self.wires[:n])
+    def __neg__(self):
+        return BinaryInt(-self.wire)
 
-    def __xor__(self, other):
-        out_wires = [a ^ b for a, b in zip(self.wires, self._wires_of(other))]
-        return BinaryInt(out_wires)
+    def __mul__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryInt(self.wire * other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryInt(self.wire * emp_int)
 
-    def __and__(self, other):
-        out_wires = [a & b for a, b in zip(self.wires, self._wires_of(other))]
-        return BinaryInt(out_wires)
-
-    def __invert__(self):
-        return BinaryInt([~b for b in self.wires])
+    def __truediv__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryInt(self.wire / other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryInt(self.wire / emp_int)
 
     def __mod__(self, other):
-        mod_wire = self.wire % other.wire
-        return BinaryInt(mod_wire)
+        emp_int = self.wire % other.wire
+        return BinaryInt(emp_int)
+
+    # Bit operations
+    def __xor__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryInt(self.wire ^ other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryInt(self.wire ^ emp_int)
+
+    def __and__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryInt(self.wire & other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryInt(self.wire & emp_int)
+
+    def __or__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryInt(self.wire | other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryInt(self.wire | emp_int)
 
     '''
-        # Get the second least significant bit of the bint, where the negative sign is stored
+        # Get the second least significant bit of the bint, where the negative sign is stored.
         # Due to jank in EMP itself, negativity is stored in the lowest bit for native binary integers,
         # and in the second lowest bit for converted arith->binary integers; this function is only needed
         # for the latter. 
