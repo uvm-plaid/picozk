@@ -4,42 +4,16 @@ from picozk import util, config
 import math
 import emp_bridge
 
-# BooleanWire is an ArithmeticWire that is treated as a boolean.
-# BinaryWire is just one bit. ~ EMPBit class.
-# to_binary should convert an AW into a bint
-# EMPBit is wrapped by BinaryWire.
-# EMPIntFps are wrapped by ArithmeticWires (or BooleanWires, but only as a result of a comparison.
-# EMPBitInts are wrapped by binary_ints.
 
-''' Use an EMP implementation of ArithInt comparisons. Convert result to binary & run is_negative.
-Write a Python method to get the 0th bit. See if EMP implementation of bint is signed or not...
-Size method in EMP can be used for comparison between bints and normal ints.'''
-
-DEF_LEN = 2**61-1
-
-def val_of(x):
-    if isinstance(x, Wire):
-        if x.wire is None:
-            raise Exception(f'Attempt to find value of None in object {x}')
-        else:
-            return x.val
-    elif isinstance(x, bool):
-        return int(x)
-    else:
-        return x
-
-def wire_of(e):
-    if isinstance(e, Wire):
-        return e.wire
-    elif isinstance(e, int):
-        return config.cc.constant_wire(e).wire
-    else:
-        raise Exception('no wire for value', e, 'of type', type(e))
-
-
+'''
+    Wires are actually holding EMP objects.
+    ArithmeticWires hold IntFps - EMP arithmetic integers.
+    BinaryWires hold Bits - EMP single bits.
+    BinaryInts hold Integers - EMP binary integers.
+'''
 @dataclass(unsafe_hash=True)
 class Wire:
-    wire: str  # wire is actually holding an EMP object, where supported
+    wire: str
 
 @dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
@@ -144,36 +118,50 @@ class BinaryWire(Wire):
         emp_wire = self.wire ^ other.wire
         return BinaryWire(emp_wire)
 
-    def to_bool(self):
-        assert self.field == 2
-        raise Exception('unsupported')
-
 @dataclass
-class BinaryInt:
-    wire: str  #
-
-    def _wires_of(self, v):
-        if isinstance(v, BinaryInt):
-            return v.wires
-        elif isinstance(v, int):
-            return util.encode_int(v, 2**len(self.wires))
-        else:
-            raise Exception('no wires for value:', v)
-
-    ''' Numeric operators '''
+class BinaryInt(Wire):
+    # Numeric comparisons
     def __eq__(self, other):
         if type(other) is BinaryInt:
-            emp_bit = self.wire == other.wire
-            return BinaryWire(emp_bit)
+            return BinaryWire(self.wire == other.wire)
         if type(other) is int:
             emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
-            other_emp = BinaryInt(emp_int)
-            emp_bit = self.wire == other_emp.wire
-            return BinaryWire(emp_bit)
+            return BinaryWire(self.wire == emp_int)
+
+    def __ne__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryWire(self.wire != other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryWire(self.wire != emp_int)
+
     def __lt__(self, other):
         if type(other) is BinaryInt:
-            emp_bit = self.wire < other.wire
-            return BinaryWire(emp_bit)
+            return BinaryWire(self.wire < other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryWire(self.wire < emp_int)
+
+    def __gt__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryWire(self.wire > other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryWire(self.wire > emp_int)
+
+    def __le__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryWire(self.wire <= other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryWire(self.wire <= emp_int)
+
+    def __ge__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryWire(self.wire >= other.wire)
+        if type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryWire(self.wire >= emp_int)
 
     def __add__(self, other):
         out_wires = []
@@ -187,15 +175,19 @@ class BinaryInt:
         return BinaryInt(list(reversed(out_wires)))
     __radd__ = __add__
 
-    def __rshift__(self, n):
-        assert isinstance(n, int)
-        bw = len(self.wires)
-        return BinaryInt([0 for _ in range(n)] + self.wires[:bw-n])
+    def __rshift__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryInt(self.wire >> other.wire)
+        elif type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryInt(self.wire >> emp_int)
 
-    def __lshift__(self, n):
-        assert isinstance(n, int)
-        bw = len(self.wires)
-        return BinaryInt(self.wires[n:] + [0 for _ in range(n)])
+    def __lshift__(self, other):
+        if type(other) is BinaryInt:
+            return BinaryInt(self.wire << other.wire)
+        elif type(other) is int:
+            emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
+            return BinaryInt(self.wire << emp_int)
 
     def rotr(self, n):
         assert isinstance(n, int)
