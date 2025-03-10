@@ -252,6 +252,30 @@ class BinaryInt(Wire):
             emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
             return BinaryInt(self.wire | emp_int)
 
+    def size(self):
+        return self.wire.size()
+
+    def abs(self):
+        emp_int = self.wire.abs()
+        return BinaryInt(emp_int)
+
+    # Unsafe; ensure downsizing does not lose information!
+    def resize(self, size, signed_extend=True):
+        emp_int = self.wire.resize(size, signed_extend)
+        return BinaryInt(emp_int)
+
+    def leading_zeroes(self):
+        emp_int = self.wire.leading_zeroes()
+        return BinaryInt(emp_int)
+
+    def hamming_weight(self):
+        emp_int = self.wire.hamming_weight()
+        return BinaryInt(emp_int)
+
+    def get_index(self, index):
+        emp_bit = self.wire.get_index(index)
+        return BinaryWire(emp_bit)
+
     '''
         # Get the second least significant bit of the bint, where the negative sign is stored.
         # Due to jank in EMP itself, negativity is stored in the lowest bit for native binary integers,
