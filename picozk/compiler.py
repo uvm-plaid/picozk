@@ -27,8 +27,14 @@ def PublicInt(x, field=None):
 def PublicBit(x):
     return config.cc.add_to_instance(x, BOOL_BIT)
 
+def reveal(x):
+    return x.reveal()
+
+'''
+Alternate reveal with special arguments that allow for calls to other reveal methods in EMP.
 def reveal(x, expect = None, party = emp_bridge.PUBLIC, signed = True):
     return x.reveal(expect=expect, party=party, signed=signed)
+'''
 
 def assert0(x):
     if val_of(x):

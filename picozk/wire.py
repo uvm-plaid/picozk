@@ -18,9 +18,11 @@ class Wire:
 @dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
     def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
-        if expect is None:
-            return self.wire.reveal_no_expect()
-        return self.wire.reveal_expect(expect)
+        # Uncomment for alternate reveal functionality. reveal_expect takes an expected integer value &
+        # returns True if the wire value matches. Otherwise, EMP stops.
+        # if expect:
+        #    return self.wire.reveal_expect(expect)
+        return self.wire.reveal_no_expect()
 
     def __add__(self, other):
         if type(other) == ArithmeticWire:
@@ -129,9 +131,10 @@ class BinaryWire(Wire):
 @dataclass
 class BinaryInt(Wire):
     def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
-        if signed:
-            return self.wire.signed_reveal(party)
-        return self.wire.unsigned_reveal(party)
+
+        # Alternate reveal functionality; uncomment for option between signed and unsigned reveals.
+        #    return self.wire.unsigned_reveal(party)
+        return self.wire.signed_reveal(party)
 
     # Numeric comparisons
     def __eq__(self, other):
