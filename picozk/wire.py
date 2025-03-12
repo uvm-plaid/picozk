@@ -252,6 +252,13 @@ class BinaryInt(Wire):
             emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
             return BinaryInt(self.wire | emp_int)
 
+    def __getitem__(self, item):
+        bit_list = list()
+        for bit in self.wire[item]:
+            bit_list.append(BinaryWire(bit))
+        print(bit_list)
+        return bit_list
+
     def size(self):
         return self.wire.size()
 
@@ -275,6 +282,13 @@ class BinaryInt(Wire):
     def get_index(self, index):
         emp_bit = self.wire.get_index(index)
         return BinaryWire(emp_bit)
+
+    def rotr(self, shift):
+        assert isinstance(shift, int)
+        bw = len(self.wires)
+
+    def rotl(self, shift):
+        i = 0
 
     '''
         # Get the second least significant bit of the bint, where the negative sign is stored.
