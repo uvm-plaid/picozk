@@ -255,8 +255,7 @@ class BinaryInt(Wire):
     def __getitem__(self, item):
         bit_list = list()
         for bit in self.wire[item]:
-            bit_list.append(BinaryWire(bit))
-        print(bit_list)
+            bit_list.append(bit)
         return bit_list
 
     def size(self):
@@ -284,8 +283,10 @@ class BinaryInt(Wire):
         return BinaryWire(emp_bit)
 
     def rotr(self, shift):
-        assert isinstance(shift, int)
-        bw = len(self.wires)
+        bw = self.wire.size()
+        bit_list = self[bw - shift:] + self[:bw - shift]
+        emp_int = emp_bridge.EMPBitInt.from_bits(bit_list)
+        return BinaryInt(emp_int)
 
     def rotl(self, shift):
         i = 0
