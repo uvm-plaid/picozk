@@ -130,6 +130,12 @@ class BinaryWire(Wire):
 
 @dataclass
 class BinaryInt(Wire):
+    def __init__(self, bits: list[BinaryWire]):
+        emp_bit_list = list()
+        for bit in bits:
+            emp_bit_list.append(bit.wire)
+        self.wire = emp_bridge.EMPBitInt.from_bits(emp_bit_list)
+
     def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
 
         # Alternate reveal functionality; uncomment for option between signed and unsigned reveals.
@@ -289,7 +295,9 @@ class BinaryInt(Wire):
         return BinaryInt(emp_int)
 
     def rotl(self, shift):
-        i = 0
+        bit_list = self[shift:] + self[:shift]
+        emp_int = emp_bridge.EMPBitInt.from_bits(bit_list)
+        return BinaryInt(emp_int)
 
     '''
         # Get the second least significant bit of the bint, where the negative sign is stored.

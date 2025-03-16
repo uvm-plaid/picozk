@@ -37,7 +37,8 @@ class ZKSHA256:
         w[0:15] = chunk
 
         for i in range(16, 64):
-            s0 = w[i-15].rotr(7) ^ w[i-15].rotr(18) ^ (w[i-15] >> 3)
+            s0 = (w[i-15])
+            #.rotr(7) ^ w[i-15].rotr(18) ^ (w[i-15] >> 3))
             s1 = w[i-2].rotr(17) ^ w[i-2].rotr(19) ^ (w[i-2] >> 10)
             w[i] = (w[i-16] + s0 + w[i-7] + s1)
 
@@ -69,6 +70,8 @@ class ZKSHA256:
         chunks = [padded_msg[i:i+512] for i in range(0, len(padded_msg), 512)]
         chunk_words = [[BinaryInt(chunk[i:i+32]) for i in range(0, len(chunk), 32)] for chunk in chunks]
         for chunk in chunk_words:
+            '''CREATING BINARYINTS WITH WIRES AS LISTS OF BINARYWIRES! ! !'''
+            print(chunk)
             self._h = self.compress(chunk, self._h)
         return self._h
 
