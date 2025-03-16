@@ -25,6 +25,8 @@ _h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
 class ZKSHA256:
     def __init__(self):
         self._h = [BinaryInt(util.encode_int(x, 2**32)) for x in _h]
+        for h in self._h:
+            print(reveal(h))
 
     def maj(self, x, y, z):
         return (x & y) ^ (x & z) ^ (y & z)
@@ -71,7 +73,6 @@ class ZKSHA256:
         chunk_words = [[BinaryInt(chunk[i:i+32]) for i in range(0, len(chunk), 32)] for chunk in chunks]
         for chunk in chunk_words:
             '''CREATING BINARYINTS WITH WIRES AS LISTS OF BINARYWIRES! ! !'''
-            print(chunk)
             self._h = self.compress(chunk, self._h)
         return self._h
 

@@ -11,12 +11,16 @@ import emp_bridge
     BinaryWires hold Bits - EMP single bits.
     BinaryInts hold Integers - EMP binary integers.
 '''
+
+STD_SIZE = 64
+
 @dataclass(unsafe_hash=True)
 class Wire:
     wire: str
 
 @dataclass(unsafe_hash=True)
 class ArithmeticWire(Wire):
+
     def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
         # Uncomment for alternate reveal functionality. reveal_expect takes an expected integer value &
         # returns True if the wire value matches. Otherwise, EMP stops.
@@ -100,6 +104,7 @@ class ArithmeticWire(Wire):
 
 @dataclass(unsafe_hash=True)
 class BinaryWire(Wire):
+
     def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
         return self.wire.reveal()
 
@@ -132,12 +137,16 @@ class BinaryWire(Wire):
 class BinaryInt(Wire):
     def __init__(self, bits: list[BinaryWire]):
         emp_bit_list = list()
-        for bit in bits:
-            emp_bit_list.append(bit.wire)
-        self.wire = emp_bridge.EMPBitInt.from_bits(emp_bit_list)
+        if len(bits) > 0 and type(bits[0]) == BinaryWire:
+            for bit in bits:
+                emp_bit_list.append(bit.wire)
+            self.wire = emp_bridge.EMPBitInt.from_bits(emp_bit_list)
+        else:
+            for num in bits:
+                emp_bit_list.append(emp_bridge.EMPBit.from_constant(num, emp_bridge.PUBLIC))
+            self.wire = emp_bridge.EMPBitInt.from_bits(emp_bit_list)
 
     def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
-
         # Alternate reveal functionality; uncomment for option between signed and unsigned reveals.
         #    return self.wire.unsigned_reveal(party)
         return self.wire.signed_reveal(party)
