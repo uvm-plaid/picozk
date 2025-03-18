@@ -135,16 +135,18 @@ class BinaryWire(Wire):
 
 @dataclass
 class BinaryInt(Wire):
-    def __init__(self, bits: list[BinaryWire]):
+    @staticmethod
+    def from_bits(bits: list[BinaryWire]):
         emp_bit_list = list()
         if len(bits) > 0 and type(bits[0]) == BinaryWire:
             for bit in bits:
                 emp_bit_list.append(bit.wire)
-            self.wire = emp_bridge.EMPBitInt.from_bits(emp_bit_list)
+            wire = emp_bridge.EMPBitInt.from_bits(emp_bit_list)
         else:
             for num in bits:
                 emp_bit_list.append(emp_bridge.EMPBit.from_constant(num, emp_bridge.PUBLIC))
-            self.wire = emp_bridge.EMPBitInt.from_bits(emp_bit_list)
+            wire = emp_bridge.EMPBitInt.from_bits(emp_bit_list)
+        return BinaryInt(wire)
 
     def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
         # Alternate reveal functionality; uncomment for option between signed and unsigned reveals.
@@ -248,7 +250,10 @@ class BinaryInt(Wire):
     # Bit operations
     def __xor__(self, other):
         if type(other) is BinaryInt:
-            return BinaryInt(self.wire ^ other.wire)
+            print("@ xor")
+            b = BinaryInt(self.wire ^ other.wire)
+            print("After xor")
+            return b
         if type(other) is int:
             emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
             return BinaryInt(self.wire ^ emp_int)
@@ -268,10 +273,7 @@ class BinaryInt(Wire):
             return BinaryInt(self.wire | emp_int)
 
     def __getitem__(self, item):
-        bit_list = list()
-        for bit in self.wire[item]:
-            bit_list.append(bit)
-        return bit_list
+        return BinaryInt(self.wire[item])
 
     def size(self):
         return self.wire.size()
@@ -299,7 +301,7 @@ class BinaryInt(Wire):
 
     def rotr(self, shift):
         bw = self.wire.size()
-        bit_list = self[bw - shift:] + self[:bw - shift]
+        bit_list = self.wire.get_bit_list(slice(bw - shift)) + self.wire.get_bit_list(slice(None, bw - shift))
         emp_int = emp_bridge.EMPBitInt.from_bits(bit_list)
         return BinaryInt(emp_int)
 

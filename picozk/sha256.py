@@ -24,9 +24,7 @@ _h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
 
 class ZKSHA256:
     def __init__(self):
-        self._h = [BinaryInt(util.encode_int(x, 2**32)) for x in _h]
-        for h in self._h:
-            print(reveal(h))
+        self._h = [BinaryInt.from_bits(util.encode_int(x, 2**32)) for x in _h]
 
     def maj(self, x, y, z):
         return (x & y) ^ (x & z) ^ (y & z)
@@ -35,14 +33,13 @@ class ZKSHA256:
         return (x & y) ^ ((~x) & z)
 
     def compress(self, chunk, _h):
-        w = [BinaryInt([0 for _ in range(32)]) for _ in range(64)]
+        w = [BinaryInt.from_bits(([0 for _ in range(32)])) for _ in range(64)]
         w[0:15] = chunk
 
         for i in range(16, 64):
-            s0 = (w[i-15])
-            #.rotr(7) ^ w[i-15].rotr(18) ^ (w[i-15] >> 3))
-            s1 = w[i-2].rotr(17) ^ w[i-2].rotr(19) ^ (w[i-2] >> 10)
-            w[i] = (w[i-16] + s0 + w[i-7] + s1)
+            s0 = w[i - 15].rotr(7) ^ w[i - 15].rotr(18) ^ (w[i - 15] >> 3)
+            s1 = w[i - 2].rotr(17) ^ w[i - 2].rotr(19) ^ (w[i - 2] >> 10)
+            w[i] = (w[i - 16] + s0 + w[i - 7] + s1)
 
         a, b, c, d, e, f, g, h = _h
         k = [BinaryInt(util.encode_int(x, 2**32)) for x in _k]
@@ -70,9 +67,8 @@ class ZKSHA256:
         padded_msg = msg + [1] + [0]*padding_amount + util.encode_int(len(msg), 2**64)
         assert len(padded_msg) % 512 == 0
         chunks = [padded_msg[i:i+512] for i in range(0, len(padded_msg), 512)]
-        chunk_words = [[BinaryInt(chunk[i:i+32]) for i in range(0, len(chunk), 32)] for chunk in chunks]
+        chunk_words = [[BinaryInt.from_bits(chunk[i:i+32]) for i in range(0, len(chunk), 32)] for chunk in chunks]
         for chunk in chunk_words:
-            '''CREATING BINARYINTS WITH WIRES AS LISTS OF BINARYWIRES! ! !'''
             self._h = self.compress(chunk, self._h)
         return self._h
 
