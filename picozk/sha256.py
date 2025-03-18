@@ -42,7 +42,7 @@ class ZKSHA256:
             w[i] = (w[i - 16] + s0 + w[i - 7] + s1)
 
         a, b, c, d, e, f, g, h = _h
-        k = [BinaryInt(util.encode_int(x, 2**32)) for x in _k]
+        k = [BinaryInt.from_bits(util.encode_int(x, 2**32)) for x in _k]
 
         for i in range(64):
             s0 = a.rotr(2) ^ a.rotr(13) ^ a.rotr(22)
@@ -71,6 +71,7 @@ class ZKSHA256:
         for chunk in chunk_words:
             self._h = self.compress(chunk, self._h)
         return self._h
+
 
 class BufferedZKSHA256:
     def __init__(self):

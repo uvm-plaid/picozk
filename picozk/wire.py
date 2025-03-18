@@ -104,6 +104,10 @@ class ArithmeticWire(Wire):
 
 @dataclass(unsafe_hash=True)
 class BinaryWire(Wire):
+    @staticmethod
+    def from_val(val):
+        wire = emp_bridge.EMPBit.from_constant(val, emp_bridge.PUBLIC)
+        return BinaryWire(wire)
 
     def reveal(self, expect=None, party=emp_bridge.PUBLIC, signed=True):
         return self.wire.reveal()
@@ -250,9 +254,7 @@ class BinaryInt(Wire):
     # Bit operations
     def __xor__(self, other):
         if type(other) is BinaryInt:
-            print("@ xor")
             b = BinaryInt(self.wire ^ other.wire)
-            print("After xor")
             return b
         if type(other) is int:
             emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
@@ -271,6 +273,9 @@ class BinaryInt(Wire):
         if type(other) is int:
             emp_int = emp_bridge.EMPBitInt.from_val(self.wire.size(), other, emp_bridge.PUBLIC)
             return BinaryInt(self.wire | emp_int)
+
+    def __invert__(self):
+        return BinaryInt(~self.wire)
 
     def __getitem__(self, item):
         return BinaryInt(self.wire[item])

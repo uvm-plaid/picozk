@@ -16,10 +16,12 @@ with PicoZKCompiler('picozk_test', field=2**32):
           0,1,0,1,0,0,1,1,0,1,0,1,0,0,1,1,1,0,0,1,0,1,1,0,0,1,0,0,0,0,1,1,0,0,1,0,0,1,1,0,0,1,
           0,1,0,0,1,1,0,1,0,0,0,0,1,1,0,0,1,0,0,0,1,1,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,1,1,0,0,0,
           0,1,1,0,0,0,1,0]
+
     bits = [SecretBit(x) for x in bs]
     h = ZKSHA256()
     digest = h.hash(bits)
 
     for w in digest:
-        for b in w.wires:
-            reveal(b)
+        for b in range(0, w.size()):
+            print(reveal(w.get_index(b)))
+    print("Thru end file")
